@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            transition: background 0.5s ease;
+        }
+
+        body.dark-mode {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .widget {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .widget:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .widget h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .dark-mode .widget {
+            background: rgba(30, 30, 50, 0.95);
+        }
+
+        .dark-mode .widget h2 {
+            color: #fff;
+            border-bottom-color: #764ba2;
+        }
+
+        /* Weather Widget */
+        .weather-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .weather-icon {
+            font-size: 4rem;
+        }
+
+        .weather-info {
+            text-align: center;
+        }
+
+        .temperature {
+            font-size: 3rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .dark-mode .temperature {
+            color: #fff;
+        }
+
+        .condition {
+            font-size: 1.2rem;
+            color: #666;
+        }
+
+        .dark-mode .condition {
+            color: #aaa;
+        }
+
+        /* Time Widget */
+        .time-display {
+            text-align: center;
+            font-size: 4rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .dark-mode .time-display {
+            color: #fff;
+        }
+
+        /* Bus Widget */
+        .bus-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .bus-item {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .dark-mode .bus-item {
+            background: rgba(118, 75, 162, 0.2);
+            border-left-color: #764ba2;
+        }
+
+        .bus-line {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        .dark-mode .bus-line {
+            color: #a78bfa;
+        }
+
+        .bus-destination {
+            color: #333;
+            margin: 5px 0;
+        }
+
+        .dark-mode .bus-destination {
+            color: #ddd;
+        }
+
+        .bus-time {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .dark-mode .bus-time {
+            color: #aaa;
+        }
+
+        .bus-delay {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .bus-vehicle {
+            color: #888;
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+
+        .dark-mode .bus-vehicle {
+            color: #777;
+        }
+
+        .bus-separator {
+            border-top: 2px dashed #ccc;
+            margin: 10px 0;
+        }
+
+        .dark-mode .bus-separator {
+            border-top-color: #555;
+        }
+
+        .no-departures {
+            color: #999;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .dark-mode .no-departures {
+            color: #777;
+        }
+
+        /* Uptime Widget */
+        .uptime-status {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .uptime-up {
+            background: #27ae60;
+            color: white;
+        }
+
+        .uptime-down {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .uptime-error {
+            background: #f39c12;
+            color: white;
+        }
+
+        .uptime-unknown {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .uptime-url {
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .dark-mode .uptime-url {
+            color: #aaa;
+        }
+
+        .uptime-last-check {
+            text-align: center;
+            color: #999;
+            font-size: 0.8rem;
+            margin-top: 10px;
+        }
+
+        .dark-mode .uptime-last-check {
+            color: #777;
+        }
+
+        /* Loading state */
+        .loading {
+            text-align: center;
+            color: #999;
+        }
+
+        .dark-mode .loading {
+            color: #777;
+        }
+
+        /* Simplified dark mode */
+        body.simplified-dark-mode .widget:not(.time-widget):not(.weather-widget):not(.bus-widget):not(.uptime-widget) {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Dashboard</h1>
+        </div>
+
+        <div class="dashboard">
+            <!-- Weather Widget -->
+            <div class="widget weather-widget">
+                <h2>Weather</h2>
+                <div class="weather-display" id="weather-display">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+
+            <!-- Time Widget -->
+            <div class="widget time-widget">
+                <h2>Time</h2>
+                <div class="time-display" id="time-display">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+
+            <!-- Bus Widget -->
+            <div class="widget bus-widget">
+                <h2>Next Bus Departures</h2>
+                <div class="bus-list" id="bus-display">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+
+            <!-- Uptime Widget -->
+            <div class="widget uptime-widget">
+                <h2>Website Uptime</h2>
+                <div id="uptime-display">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Audio context for ding sound
+        let audioContext = null;
+
+        function playDing() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.5);
+        }
+
+        // Fetch functions
+        async function fetchWeather() {
+            try {
+                const response = await fetch('/api/weather');
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching weather:', error);
+                return null;
+            }
+        }
+
+        async function fetchTime() {
+            try {
+                const response = await fetch('/api/time');
+                const data = await response.json();
+                return data.time;
+            } catch (error) {
+                console.error('Error fetching time:', error);
+                return null;
+            }
+        }
+
+        async function fetchBuses() {
+            try {
+                const response = await fetch('/api/buses');
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching buses:', error);
+                return null;
+            }
+        }
+
+        async function fetchUptime() {
+            try {
+                const response = await fetch('/api/uptime');
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching uptime:', error);
+                return null;
+            }
+        }
+
+        // Display functions
+        function displayWeather(data) {
+            const display = document.getElementById('weather-display');
+            if (!data) {
+                display.innerHTML = '<div class="loading">Error loading weather</div>';
+                return;
+            }
+            display.innerHTML = `
+                <div class="weather-icon">${data.icon}</div>
+                <div class="weather-info">
+                    <div class="temperature">${data.temperature}°C</div>
+                    <div class="condition">${data.condition}</div>
+                </div>
+            `;
+        }
+
+        function displayTime(time) {
+            const display = document.getElementById('time-display');
+            if (!time) {
+                display.innerHTML = '<div class="loading">Error loading time</div>';
+                return;
+            }
+            display.innerHTML = `<div class="time-display">${time}</div>`;
+        }
+
+        function displayBuses(buses) {
+            const display = document.getElementById('bus-display');
+            if (!buses) {
+                display.innerHTML = '<div class="loading">Error loading buses</div>';
+                return;
+            }
+
+            if (buses.length === 0) {
+                display.innerHTML = '<div class="no-departures">No Departures</div>';
+                return;
+            }
+
+            let html = '';
+            for (const bus of buses) {
+                if (bus.separator) {
+                    html += '<div class="bus-separator"></div>';
+                } else if (bus.no_departures) {
+                    html += '<div class="no-departures">No Departures</div>';
+                } else if (bus.error) {
+                    html += `<div class="no-departures">Error: ${bus.error}</div>`;
+                } else {
+                    const delayText = bus.delay ? ` <span class="bus-delay">(${bus.delay})</span>` : '';
+                    const vehicleText = bus.vehicle ? `<div class="bus-vehicle">${bus.vehicle}</div>` : '';
+                    
+                    // Parse the time to display just the time
+                    const timeObj = new Date(bus.aimed_time);
+                    const timeStr = timeObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                    
+                    html += `
+                        <div class="bus-item">
+                            <div class="bus-line">${bus.line}</div>
+                            <div class="bus-destination">${bus.destination}</div>
+                            <div class="bus-time">${timeStr}${delayText}</div>
+                            ${vehicleText}
+                        </div>
+                    `;
+                }
+            }
+            display.innerHTML = html;
+        }
+
+        let lastUptimeStatus = null;
+
+        function displayUptime(data) {
+            const display = document.getElementById('uptime-display');
+            if (!data) {
+                display.innerHTML = '<div class="loading">Error loading uptime</div>';
+                return;
+            }
+
+            const statusClass = `uptime-${data.status}`;
+            const statusText = data.status.toUpperCase();
+            
+            // Check if status changed and play sound
+            if (lastUptimeStatus !== null && lastUptimeStatus !== data.status && data.status_changed) {
+                playDing();
+            }
+            lastUptimeStatus = data.status;
+
+            const lastCheck = data.last_check ? new Date(data.last_check).toLocaleTimeString('en-GB') : 'Unknown';
+
+            display.innerHTML = `
+                <div class="uptime-status ${statusClass}">${statusText}</div>
+                <div class="uptime-url">eeveeit.uk</div>
+                <div class="uptime-last-check">Last check: ${lastCheck}</div>
+            `;
+        }
+
+        // Sunset/Sunrise calculation
+        function calculateSunriseSunset() {
+            // Approximate times for London (you can adjust these)
+            // In a real implementation, you'd use a proper astronomy library
+            const now = new Date();
+            const month = now.getMonth();
+            
+            // Simple approximation: varies by month
+            const sunriseHour = 6 + Math.sin((month - 3) * Math.PI / 6) * 2;
+            const sunsetHour = 18 + Math.sin((month - 3) * Math.PI / 6) * 2;
+            
+            return {
+                sunrise: new Date(now.setHours(sunriseHour, 0, 0, 0)),
+                sunset: new Date(now.setHours(sunsetHour, 0, 0, 0))
+            };
+        }
+
+        function updateDarkMode() {
+            const now = new Date();
+            const { sunrise, sunset } = calculateSunriseSunset();
+            
+            const isNight = now < sunrise || now > sunset;
+            
+            if (isNight) {
+                document.body.classList.add('dark-mode');
+                document.body.classList.add('simplified-dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+                document.body.classList.remove('simplified-dark-mode');
+            }
+        }
+
+        // Update all data
+        async function updateAll() {
+            const weather = await fetchWeather();
+            displayWeather(weather);
+
+            const time = await fetchTime();
+            displayTime(time);
+
+            const buses = await fetchBuses();
+            displayBuses(buses);
+
+            const uptime = await fetchUptime();
+            displayUptime(uptime);
+
+            updateDarkMode();
+        }
+
+        // Initial load
+        updateAll();
+
+        // Update time every second
+        setInterval(async () => {
+            const time = await fetchTime();
+            displayTime(time);
+            updateDarkMode();
+        }, 1000);
+
+        // Update other data every 30 seconds
+        setInterval(updateAll, 30000);
+    </script>
+</body>
+</html>
