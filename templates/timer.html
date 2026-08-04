@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timer Settings</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .timer-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .timer-card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+
+        .timer-display {
+            text-align: center;
+            font-size: 4rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 30px;
+        }
+
+        .timer-inputs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .timer-input {
+            flex: 1;
+        }
+
+        .timer-input label {
+            display: block;
+            color: #333;
+            margin-bottom: 8px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .timer-input input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+
+        .timer-input input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            color: white;
+            text-decoration: none;
+            margin-top: 20px;
+            font-size: 1.1rem;
+        }
+
+        .status-message {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .status-message.success {
+            background: #27ae60;
+            color: white;
+            display: block;
+        }
+
+        .status-message.error {
+            background: #e74c3c;
+            color: white;
+            display: block;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .timer-controls .btn {
+            flex: 1;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+
+        .back-button:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <button class="back-button" onclick="window.location.href='/'">← Back</button>
+    
+    <div class="container">
+        <div class="header">
+            <h1>Timer</h1>
+        </div>
+
+        <div class="timer-card">
+            <h2>Timer Display</h2>
+            <div class="timer-display" id="timer-display">00:00:00</div>
+
+            <div class="timer-inputs" id="timer-inputs">
+                <div class="timer-input">
+                    <label>Hours</label>
+                    <input type="number" id="timer-hours" min="0" max="23" value="0">
+                </div>
+                <div class="timer-input">
+                    <label>Minutes</label>
+                    <input type="number" id="timer-minutes" min="0" max="59" value="0">
+                </div>
+                <div class="timer-input">
+                    <label>Seconds</label>
+                    <input type="number" id="timer-seconds" min="0" max="59" value="0">
+                </div>
+            </div>
+
+            <div class="status-message" id="status-message"></div>
+
+            <div class="buttons" id="setup-buttons">
+                <button class="btn btn-primary" onclick="setTimer()">Set Timer</button>
+                <button class="btn btn-danger" onclick="deleteTimer()">Delete Timer</button>
+            </div>
+
+            <div class="timer-controls hidden" id="timer-controls">
+                <button class="btn btn-success" onclick="startTimer()">Start</button>
+                <button class="btn btn-warning" onclick="pauseTimer()">Pause</button>
+                <button class="btn btn-secondary" onclick="resetTimer()">Reset</button>
+            </div>
+        </div>
+
+        <a href="/" class="back-link">← Back to Dashboard</a>
+    </div>
+
+    <script>
+        let timerInterval = null;
+
+        async function fetchTimer() {
+            try {
+                const response = await fetch('/api/timers');
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching timer:', error);
+                return null;
+            }
+        }
+
+        function formatTime(seconds) {
+            if (seconds === null || seconds === undefined) return '00:00:00';
+            const hrs = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function displayTimer(timer) {
+            const display = document.getElementById('timer-display');
+            const setupButtons = document.getElementById('setup-buttons');
+            const timerControls = document.getElementById('timer-controls');
+            const timerInputs = document.getElementById('timer-inputs');
+
+            if (timer.remaining !== null) {
+                display.textContent = formatTime(timer.remaining);
+                
+                if (timer.duration !== null) {
+                    setupButtons.classList.add('hidden');
+                    timerControls.classList.remove('hidden');
+                    timerInputs.classList.add('hidden');
+                } else {
+                    setupButtons.classList.remove('hidden');
+                    timerControls.classList.add('hidden');
+                    timerInputs.classList.remove('hidden');
+                }
+            } else {
+                display.textContent = '00:00:00';
+                setupButtons.classList.remove('hidden');
+                timerControls.classList.add('hidden');
+                timerInputs.classList.remove('hidden');
+            }
+        }
+
+        async function setTimer() {
+            const hours = parseInt(document.getElementById('timer-hours').value) || 0;
+            const minutes = parseInt(document.getElementById('timer-minutes').value) || 0;
+            const seconds = parseInt(document.getElementById('timer-seconds').value) || 0;
+            const statusMessage = document.getElementById('status-message');
+
+            const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+
+            if (totalSeconds <= 0) {
+                statusMessage.textContent = 'Please set a valid time';
+                statusMessage.className = 'status-message error';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/timers', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        duration: totalSeconds
+                    })
+                });
+
+                if (response.ok) {
+                    statusMessage.textContent = 'Timer set successfully!';
+                    statusMessage.className = 'status-message success';
+                    await updateTimerDisplay();
+                } else {
+                    statusMessage.textContent = 'Error setting timer';
+                    statusMessage.className = 'status-message error';
+                }
+            } catch (error) {
+                console.error('Error setting timer:', error);
+                statusMessage.textContent = 'Error setting timer';
+                statusMessage.className = 'status-message error';
+            }
+        }
+
+        async function startTimer() {
+            try {
+                const response = await fetch('/api/timers/start', {
+                    method: 'POST'
+                });
+                await updateTimerDisplay();
+            } catch (error) {
+                console.error('Error starting timer:', error);
+            }
+        }
+
+        async function pauseTimer() {
+            try {
+                const response = await fetch('/api/timers/pause', {
+                    method: 'POST'
+                });
+                await updateTimerDisplay();
+            } catch (error) {
+                console.error('Error pausing timer:', error);
+            }
+        }
+
+        async function resetTimer() {
+            try {
+                const response = await fetch('/api/timers/reset', {
+                    method: 'POST'
+                });
+                await updateTimerDisplay();
+            } catch (error) {
+                console.error('Error resetting timer:', error);
+            }
+        }
+
+        async function deleteTimer() {
+            const statusMessage = document.getElementById('status-message');
+
+            try {
+                const response = await fetch('/api/timers', {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    statusMessage.textContent = 'Timer deleted successfully!';
+                    statusMessage.className = 'status-message success';
+                    document.getElementById('timer-hours').value = 0;
+                    document.getElementById('timer-minutes').value = 0;
+                    document.getElementById('timer-seconds').value = 0;
+                    await updateTimerDisplay();
+                } else {
+                    statusMessage.textContent = 'Error deleting timer';
+                    statusMessage.className = 'status-message error';
+                }
+            } catch (error) {
+                console.error('Error deleting timer:', error);
+                statusMessage.textContent = 'Error deleting timer';
+                statusMessage.className = 'status-message error';
+            }
+        }
+
+        async function updateTimerDisplay() {
+            const timer = await fetchTimer();
+            if (timer) {
+                displayTimer(timer);
+            }
+        }
+
+        // Initial load
+        updateTimerDisplay();
+
+        // Update timer display every second when running
+        setInterval(async () => {
+            const timer = await fetchTimer();
+            if (timer && timer.running) {
+                displayTimer(timer);
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

@@ -110,6 +110,27 @@
             color: #aaa;
         }
 
+        .sun-times {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .dark-mode .sun-times {
+            color: #aaa;
+        }
+
+        .sun-time {
+            text-align: center;
+        }
+
+        .sun-icon {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+        }
+
         /* Time Display */
         .time-display {
             text-align: center;
@@ -118,6 +139,96 @@
             color: white;
             margin: 20px 0;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .alarm-display {
+            text-align: center;
+            font-size: 1.2rem;
+            color: white;
+            margin-top: 5px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .alarm-display.hidden {
+            display: none;
+        }
+
+        .timer-display {
+            text-align: center;
+            font-size: 1.2rem;
+            color: white;
+            margin-top: 5px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .timer-display.hidden {
+            display: none;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .nav-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .lock-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+
+        .lock-button:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .locked-mode .nav-buttons,
+        .locked-mode .dashboard,
+        .locked-mode .alarm-display,
+        .locked-mode .timer-display {
+            display: none;
+        }
+
+        .locked-mode .time-display {
+            font-size: 8rem;
+        }
+
+        .locked-mode .header {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
         }
 
         /* Bus Widget */
@@ -365,10 +476,22 @@
 </head>
 <body>
     <div class="container">
+        <button class="lock-button" onclick="toggleLock()">🔒 Lock</button>
+        
         <div class="header">
             <h1>Dashboard</h1>
             <div class="time-display" id="time-display">
                 <div class="loading">Loading...</div>
+            </div>
+            <div class="alarm-display hidden" id="alarm-display">
+                Alarm: <span id="alarm-time">Not set</span>
+            </div>
+            <div class="timer-display hidden" id="timer-display">
+                Timer: <span id="timer-time">00:00:00</span>
+            </div>
+            <div class="nav-buttons">
+                <button class="nav-btn" onclick="window.location.href='/alarms'">⏰ Alarms</button>
+                <button class="nav-btn" onclick="window.location.href='/timer'">⏱️ Timer</button>
             </div>
         </div>
 
@@ -469,6 +592,39 @@
             }
         }
 
+        async function fetchAlarms() {
+            try {
+                const response = await fetch('/api/alarms');
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching alarms:', error);
+                return null;
+            }
+        }
+
+        async function fetchAlarmTriggered() {
+            try {
+                const response = await fetch('/api/alarm-triggered');
+                const data = await response.json();
+                return data.triggered;
+            } catch (error) {
+                console.error('Error fetching alarm triggered status:', error);
+                return false;
+            }
+        }
+
+        async function fetchTimer() {
+            try {
+                const response = await fetch('/api/timers');
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching timer:', error);
+                return null;
+            }
+        }
+
         // Display functions
         function displayWeather(data) {
             const display = document.getElementById('weather-display');
@@ -481,6 +637,16 @@
                 <div class="weather-info">
                     <div class="temperature">${data.temperature}°C</div>
                     <div class="condition">${data.condition}</div>
+                    <div class="sun-times">
+                        <div class="sun-time">
+                            <div class="sun-icon">🌅</div>
+                            <div>${data.sunrise}</div>
+                        </div>
+                        <div class="sun-time">
+                            <div class="sun-icon">🌇</div>
+                            <div>${data.sunset}</div>
+                        </div>
+                    </div>
                 </div>
             `;
         }
@@ -492,6 +658,57 @@
                 return;
             }
             display.innerHTML = time;
+        }
+
+        function displayAlarm(alarmData) {
+            const display = document.getElementById('alarm-display');
+            const timeDisplay = document.getElementById('alarm-time');
+            
+            if (!alarmData) {
+                display.classList.add('hidden');
+                return;
+            }
+            
+            // Check if it's past midnight (show alarm from 00:00 onwards)
+            const now = new Date();
+            const hour = now.getHours();
+            
+            if (hour >= 0 && hour < 12) { // Show from midnight to noon
+                display.classList.remove('hidden');
+                if (alarmData.enabled && alarmData.time) {
+                    timeDisplay.textContent = alarmData.time;
+                } else {
+                    timeDisplay.textContent = 'Not set';
+                }
+            } else {
+                display.classList.add('hidden');
+            }
+        }
+
+        function formatTimerTime(seconds) {
+            if (seconds === null || seconds === undefined) return null;
+            const hrs = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function displayTimer(timerData) {
+            const display = document.getElementById('timer-display');
+            const timeDisplay = document.getElementById('timer-time');
+            
+            if (!timerData || !timerData.duration) {
+                display.classList.add('hidden');
+                return;
+            }
+            
+            // Only show timer if it's running or paused
+            if (timerData.running || timerData.paused) {
+                display.classList.remove('hidden');
+                timeDisplay.textContent = formatTimerTime(timerData.remaining);
+            } else {
+                display.classList.add('hidden');
+            }
         }
 
         function displayBuses(buses) {
@@ -529,6 +746,43 @@
 
         let lastEeveeitStatus = null;
         let lastJellyfinStatus = null;
+        let lastAlarmTriggered = false;
+
+        function playAlarmSound() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            // Play a more prominent alarm sound
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = 880; // Higher pitch for alarm
+            oscillator.type = 'square'; // More aggressive sound
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+            
+            // Play a second beep
+            setTimeout(() => {
+                const osc2 = audioContext.createOscillator();
+                const gain2 = audioContext.createGain();
+                osc2.connect(gain2);
+                gain2.connect(audioContext.destination);
+                osc2.frequency.value = 880;
+                osc2.type = 'square';
+                gain2.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                osc2.start(audioContext.currentTime);
+                osc2.stop(audioContext.currentTime + 0.3);
+            }, 400);
+        }
 
         function displayUptime(data) {
             const display = document.getElementById('uptime-display');
@@ -605,13 +859,48 @@
         }
 
         // Sunset/Sunrise calculation
+        let weatherData = null;
+
         function calculateSunriseSunset() {
-            // Approximate times for London (you can adjust these)
-            // In a real implementation, you'd use a proper astronomy library
+            // Use actual sunrise/sunset from weather API if available
+            if (weatherData && weatherData.sunrise && weatherData.sunset) {
+                try {
+                    const now = new Date();
+                    const sunriseTime = new Date();
+                    const sunsetTime = new Date();
+                    
+                    // Parse sunrise time (format: "06:00 AM")
+                    const sunriseMatch = weatherData.sunrise.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                    if (sunriseMatch) {
+                        let hours = parseInt(sunriseMatch[1]);
+                        const minutes = parseInt(sunriseMatch[2]);
+                        const ampm = sunriseMatch[3].toUpperCase();
+                        if (ampm === 'PM' && hours !== 12) hours += 12;
+                        if (ampm === 'AM' && hours === 12) hours = 0;
+                        sunriseTime.setHours(hours, minutes, 0, 0);
+                    }
+                    
+                    // Parse sunset time (format: "08:00 PM")
+                    const sunsetMatch = weatherData.sunset.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                    if (sunsetMatch) {
+                        let hours = parseInt(sunsetMatch[1]);
+                        const minutes = parseInt(sunsetMatch[2]);
+                        const ampm = sunsetMatch[3].toUpperCase();
+                        if (ampm === 'PM' && hours !== 12) hours += 12;
+                        if (ampm === 'AM' && hours === 12) hours = 0;
+                        sunsetTime.setHours(hours, minutes, 0, 0);
+                    }
+                    
+                    return { sunrise: sunriseTime, sunset: sunsetTime };
+                } catch (e) {
+                    console.error('Error parsing sunrise/sunset:', e);
+                }
+            }
+            
+            // Fallback to approximation
             const now = new Date();
             const month = now.getMonth();
             
-            // Simple approximation: varies by month
             const sunriseHour = 6 + Math.sin((month - 3) * Math.PI / 6) * 2;
             const sunsetHour = 18 + Math.sin((month - 3) * Math.PI / 6) * 2;
             
@@ -639,6 +928,7 @@
         // Update all data
         async function updateAll() {
             const weather = await fetchWeather();
+            weatherData = weather; // Store for sunrise/sunset calculation
             displayWeather(weather);
 
             const time = await fetchTime();
@@ -649,6 +939,18 @@
 
             const uptime = await fetchUptime();
             displayUptime(uptime);
+
+            const alarms = await fetchAlarms();
+            displayAlarm(alarms);
+
+            const timer = await fetchTimer();
+            displayTimer(timer);
+
+            const alarmTriggered = await fetchAlarmTriggered();
+            if (alarmTriggered && !lastAlarmTriggered) {
+                playAlarmSound();
+            }
+            lastAlarmTriggered = alarmTriggered;
 
             updateDarkMode();
         }
@@ -663,8 +965,39 @@
             updateDarkMode();
         }, 1000);
 
+        // Check alarm trigger status every second
+        setInterval(async () => {
+            const alarmTriggered = await fetchAlarmTriggered();
+            if (alarmTriggered && !lastAlarmTriggered) {
+                playAlarmSound();
+            }
+            lastAlarmTriggered = alarmTriggered;
+        }, 1000);
+
+        // Update timer display every second when running
+        setInterval(async () => {
+            const timer = await fetchTimer();
+            if (timer && (timer.running || timer.paused)) {
+                displayTimer(timer);
+            }
+        }, 1000);
+
         // Update other data every 30 seconds
         setInterval(updateAll, 30000);
+
+        // Lock functionality
+        function toggleLock() {
+            document.body.classList.add('locked-mode');
+            document.querySelector('.lock-button').style.display = 'none';
+        }
+
+        // Unlock on click (but not on lock button itself)
+        document.addEventListener('click', function(e) {
+            if (document.body.classList.contains('locked-mode') && !e.target.classList.contains('lock-button')) {
+                document.body.classList.remove('locked-mode');
+                document.querySelector('.lock-button').style.display = 'block';
+            }
+        });
     </script>
 </body>
 </html>

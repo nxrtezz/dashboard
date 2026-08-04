@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alarm Settings</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .alarm-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+        }
+
+        .alarm-card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #333;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .form-group input[type="time"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1.1rem;
+        }
+
+        .form-group input[type="time"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 30px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 24px;
+            width: 24px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #667eea;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(30px);
+        }
+
+        .current-alarm {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .current-alarm-time {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .current-alarm-status {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            color: white;
+            text-decoration: none;
+            margin-top: 20px;
+            font-size: 1.1rem;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+        }
+
+        .back-button:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .status-message {
+            text-align: center;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .status-message.success {
+            background: #27ae60;
+            color: white;
+            display: block;
+        }
+
+        .status-message.error {
+            background: #e74c3c;
+            color: white;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <button class="back-button" onclick="window.location.href='/'">← Back</button>
+    
+    <div class="container">
+        <div class="header">
+            <h1>Alarm Settings</h1>
+        </div>
+
+        <div class="alarm-card">
+            <h2>Current Alarm</h2>
+            <div class="current-alarm" id="current-alarm">
+                <div class="current-alarm-time" id="alarm-time-display">Not set</div>
+                <div class="current-alarm-status" id="alarm-status-display">Disabled</div>
+            </div>
+
+            <div class="form-group">
+                <label for="alarm-time">Alarm Time</label>
+                <input type="time" id="alarm-time" name="alarm-time">
+            </div>
+
+            <div class="form-group toggle-container">
+                <label for="alarm-enabled">Enable Alarm</label>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="alarm-enabled" name="alarm-enabled">
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="status-message" id="status-message"></div>
+
+            <div class="buttons">
+                <button class="btn btn-primary" onclick="setAlarm()">Set Alarm</button>
+                <button class="btn btn-danger" onclick="deleteAlarm()">Delete Alarm</button>
+            </div>
+        </div>
+
+        <a href="/" class="back-link">← Back to Dashboard</a>
+    </div>
+
+    <script>
+        async function fetchAlarm() {
+            try {
+                const response = await fetch('/api/alarms');
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching alarm:', error);
+                return null;
+            }
+        }
+
+        async function setAlarm() {
+            const timeInput = document.getElementById('alarm-time');
+            const enabledInput = document.getElementById('alarm-enabled');
+            const statusMessage = document.getElementById('status-message');
+
+            if (!timeInput.value) {
+                statusMessage.textContent = 'Please select a time';
+                statusMessage.className = 'status-message error';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/alarms', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        time: timeInput.value,
+                        enabled: enabledInput.checked
+                    })
+                });
+
+                if (response.ok) {
+                    statusMessage.textContent = 'Alarm set successfully!';
+                    statusMessage.className = 'status-message success';
+                    await updateAlarmDisplay();
+                } else {
+                    statusMessage.textContent = 'Error setting alarm';
+                    statusMessage.className = 'status-message error';
+                }
+            } catch (error) {
+                console.error('Error setting alarm:', error);
+                statusMessage.textContent = 'Error setting alarm';
+                statusMessage.className = 'status-message error';
+            }
+        }
+
+        async function deleteAlarm() {
+            const statusMessage = document.getElementById('status-message');
+
+            try {
+                const response = await fetch('/api/alarms', {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    statusMessage.textContent = 'Alarm deleted successfully!';
+                    statusMessage.className = 'status-message success';
+                    document.getElementById('alarm-time').value = '';
+                    document.getElementById('alarm-enabled').checked = false;
+                    await updateAlarmDisplay();
+                } else {
+                    statusMessage.textContent = 'Error deleting alarm';
+                    statusMessage.className = 'status-message error';
+                }
+            } catch (error) {
+                console.error('Error deleting alarm:', error);
+                statusMessage.textContent = 'Error deleting alarm';
+                statusMessage.className = 'status-message error';
+            }
+        }
+
+        async function updateAlarmDisplay() {
+            const alarm = await fetchAlarm();
+            if (alarm) {
+                const timeDisplay = document.getElementById('alarm-time-display');
+                const statusDisplay = document.getElementById('alarm-status-display');
+                const timeInput = document.getElementById('alarm-time');
+                const enabledInput = document.getElementById('alarm-enabled');
+
+                if (alarm.time) {
+                    timeDisplay.textContent = alarm.time;
+                    timeInput.value = alarm.time;
+                } else {
+                    timeDisplay.textContent = 'Not set';
+                    timeInput.value = '';
+                }
+
+                if (alarm.enabled) {
+                    statusDisplay.textContent = 'Enabled';
+                    enabledInput.checked = true;
+                } else {
+                    statusDisplay.textContent = 'Disabled';
+                    enabledInput.checked = false;
+                }
+            }
+        }
+
+        // Initial load
+        updateAlarmDisplay();
+    </script>
+</body>
+</html>
