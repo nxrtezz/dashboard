@@ -30,36 +30,36 @@
         }
 
         .header h1 {
-            font-size: 2rem;
+            font-size: 2.5rem;
             margin-bottom: 10px;
         }
 
         .timer-card {
             background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 25px;
+            border-radius: 20px;
+            padding: 35px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             margin-bottom: 20px;
         }
 
         .timer-card h2 {
             color: #333;
-            margin-bottom: 20px;
-            font-size: 1.3rem;
+            margin-bottom: 25px;
+            font-size: 1.5rem;
         }
 
         .timer-display {
             text-align: center;
-            font-size: 4rem;
+            font-size: 5rem;
             font-weight: bold;
             color: #667eea;
-            margin-bottom: 30px;
+            margin-bottom: 40px;
         }
 
         .timer-inputs {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 15px;
+            margin-bottom: 30px;
         }
 
         .timer-input {
@@ -69,17 +69,18 @@
         .timer-input label {
             display: block;
             color: #333;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             font-weight: bold;
             text-align: center;
+            font-size: 1.2rem;
         }
 
         .timer-input input {
             width: 100%;
-            padding: 12px;
+            padding: 20px;
             border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 1.1rem;
+            border-radius: 12px;
+            font-size: 1.5rem;
             text-align: center;
         }
 
@@ -90,24 +91,29 @@
 
         .buttons {
             display: flex;
-            gap: 10px;
+            gap: 15px;
             flex-wrap: wrap;
         }
 
         .btn {
             flex: 1;
-            min-width: 80px;
-            padding: 12px;
+            min-width: 100px;
+            padding: 20px;
             border: none;
-            border-radius: 8px;
-            font-size: 1rem;
+            border-radius: 12px;
+            font-size: 1.3rem;
             font-weight: bold;
             cursor: pointer;
-            transition: transform 0.2s ease;
+            transition: transform 0.2s ease, background 0.2s ease;
+            min-height: 60px;
         }
 
         .btn:hover {
-            transform: translateY(-2px);
+            transform: translateY(-3px);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
         }
 
         .btn-primary {
@@ -141,15 +147,16 @@
             color: white;
             text-decoration: none;
             margin-top: 20px;
-            font-size: 1.1rem;
+            font-size: 1.3rem;
         }
 
         .status-message {
             text-align: center;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
             display: none;
+            font-size: 1.2rem;
         }
 
         .status-message.success {
@@ -166,8 +173,8 @@
 
         .timer-controls {
             display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 15px;
+            margin-bottom: 25px;
         }
 
         .timer-controls .btn {
@@ -182,10 +189,10 @@
             position: fixed;
             top: 20px;
             left: 20px;
-            padding: 10px 15px;
+            padding: 15px 25px;
             border: none;
-            border-radius: 8px;
-            font-size: 1rem;
+            border-radius: 12px;
+            font-size: 1.3rem;
             font-weight: bold;
             cursor: pointer;
             transition: transform 0.2s ease;
@@ -196,8 +203,50 @@
         }
 
         .back-button:hover {
-            transform: translateY(-2px);
+            transform: translateY(-3px);
             background: rgba(255, 255, 255, 0.3);
+        }
+
+        .back-button:active {
+            transform: translateY(-1px);
+        }
+
+        /* Touch-friendly improvements */
+        @media (hover: none) {
+            .btn:hover {
+                transform: none;
+            }
+            
+            .back-button:hover {
+                transform: none;
+            }
+        }
+
+        .btn {
+            -webkit-tap-highlight-color: rgba(102, 126, 234, 0.3);
+            tap-highlight-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .back-button {
+            -webkit-tap-highlight-color: rgba(102, 126, 234, 0.3);
+            tap-highlight-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .timer-input input {
+            -webkit-tap-highlight-color: rgba(102, 126, 234, 0.3);
+            tap-highlight-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .status-message.success {
+            background: #27ae60;
+            color: white;
+            display: block;
+        }
+
+        .status-message.error {
+            background: #e74c3c;
+            color: white;
+            display: block;
         }
     </style>
 </head>

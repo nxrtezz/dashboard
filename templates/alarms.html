@@ -30,41 +30,42 @@
         }
 
         .header h1 {
-            font-size: 2rem;
+            font-size: 2.5rem;
             margin-bottom: 10px;
         }
 
         .alarm-card {
             background: rgba(255, 255, 255, 0.95);
-            border-radius: 15px;
-            padding: 25px;
+            border-radius: 20px;
+            padding: 35px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             margin-bottom: 20px;
         }
 
         .alarm-card h2 {
             color: #333;
-            margin-bottom: 20px;
-            font-size: 1.3rem;
+            margin-bottom: 25px;
+            font-size: 1.5rem;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
 
         .form-group label {
             display: block;
             color: #333;
-            margin-bottom: 8px;
+            margin-bottom: 12px;
             font-weight: bold;
+            font-size: 1.2rem;
         }
 
         .form-group input[type="time"] {
             width: 100%;
-            padding: 12px;
+            padding: 20px;
             border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 1.1rem;
+            border-radius: 12px;
+            font-size: 1.5rem;
         }
 
         .form-group input[type="time"]:focus {
@@ -76,12 +77,13 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            padding: 10px 0;
         }
 
         .toggle-switch {
             position: relative;
-            width: 60px;
-            height: 30px;
+            width: 80px;
+            height: 40px;
         }
 
         .toggle-switch input {
@@ -99,16 +101,16 @@
             bottom: 0;
             background-color: #ccc;
             transition: .4s;
-            border-radius: 30px;
+            border-radius: 40px;
         }
 
         .slider:before {
             position: absolute;
             content: "";
-            height: 24px;
-            width: 24px;
-            left: 3px;
-            bottom: 3px;
+            height: 32px;
+            width: 32px;
+            left: 4px;
+            bottom: 4px;
             background-color: white;
             transition: .4s;
             border-radius: 50%;
@@ -119,46 +121,52 @@
         }
 
         input:checked + .slider:before {
-            transform: translateX(30px);
+            transform: translateX(40px);
         }
 
         .current-alarm {
             background: rgba(102, 126, 234, 0.1);
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
             text-align: center;
         }
 
         .current-alarm-time {
-            font-size: 2rem;
+            font-size: 3rem;
             font-weight: bold;
             color: #667eea;
         }
 
         .current-alarm-status {
             color: #666;
-            margin-top: 5px;
+            margin-top: 10px;
+            font-size: 1.2rem;
         }
 
         .buttons {
             display: flex;
-            gap: 10px;
+            gap: 15px;
         }
 
         .btn {
             flex: 1;
-            padding: 12px;
+            padding: 20px;
             border: none;
-            border-radius: 8px;
-            font-size: 1rem;
+            border-radius: 12px;
+            font-size: 1.3rem;
             font-weight: bold;
             cursor: pointer;
-            transition: transform 0.2s ease;
+            transition: transform 0.2s ease, background 0.2s ease;
+            min-height: 60px;
         }
 
         .btn:hover {
-            transform: translateY(-2px);
+            transform: translateY(-3px);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
         }
 
         .btn-primary {
@@ -189,10 +197,10 @@
             position: fixed;
             top: 20px;
             left: 20px;
-            padding: 10px 15px;
+            padding: 15px 25px;
             border: none;
-            border-radius: 8px;
-            font-size: 1rem;
+            border-radius: 12px;
+            font-size: 1.3rem;
             font-weight: bold;
             cursor: pointer;
             transition: transform 0.2s ease;
@@ -203,16 +211,52 @@
         }
 
         .back-button:hover {
-            transform: translateY(-2px);
+            transform: translateY(-3px);
             background: rgba(255, 255, 255, 0.3);
+        }
+
+        .back-button:active {
+            transform: translateY(-1px);
         }
 
         .status-message {
             text-align: center;
-            padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
             display: none;
+            font-size: 1.2rem;
+        }
+
+        /* Touch-friendly improvements */
+        @media (hover: none) {
+            .btn:hover {
+                transform: none;
+            }
+            
+            .back-button:hover {
+                transform: none;
+            }
+        }
+
+        .btn {
+            -webkit-tap-highlight-color: rgba(102, 126, 234, 0.3);
+            tap-highlight-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .back-button {
+            -webkit-tap-highlight-color: rgba(102, 126, 234, 0.3);
+            tap-highlight-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .toggle-switch input {
+            -webkit-tap-highlight-color: rgba(102, 126, 234, 0.3);
+            tap-highlight-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .form-group input {
+            -webkit-tap-highlight-color: rgba(102, 126, 234, 0.3);
+            tap-highlight-color: rgba(102, 126, 234, 0.3);
         }
 
         .status-message.success {
