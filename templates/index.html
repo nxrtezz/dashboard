@@ -110,16 +110,14 @@
             color: #aaa;
         }
 
-        /* Time Widget */
+        /* Time Display */
         .time-display {
             text-align: center;
-            font-size: 4rem;
+            font-size: 5rem;
             font-weight: bold;
-            color: #333;
-        }
-
-        .dark-mode .time-display {
-            color: #fff;
+            color: white;
+            margin: 20px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
 
         /* Bus Widget */
@@ -184,15 +182,6 @@
             color: #777;
         }
 
-        .bus-separator {
-            border-top: 2px dashed #ccc;
-            margin: 10px 0;
-        }
-
-        .dark-mode .bus-separator {
-            border-top-color: #555;
-        }
-
         .no-departures {
             color: #999;
             text-align: center;
@@ -254,6 +243,110 @@
             color: #777;
         }
 
+        .uptime-websites {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .uptime-website {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .dark-mode .uptime-website {
+            background: rgba(118, 75, 162, 0.2);
+        }
+
+        .uptime-website-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .dark-mode .uptime-website-name {
+            color: #fff;
+        }
+
+        .uptime-website-status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: white;
+        }
+
+        .site-info {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .dark-mode .site-info {
+            background: rgba(118, 75, 162, 0.2);
+        }
+
+        .site-info-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .dark-mode .site-info-title {
+            color: #fff;
+        }
+
+        .site-info-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .site-info-stat {
+            text-align: center;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 5px;
+        }
+
+        .dark-mode .site-info-stat {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .site-info-stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .dark-mode .site-info-stat-value {
+            color: #a78bfa;
+        }
+
+        .site-info-stat-label {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .dark-mode .site-info-stat-label {
+            color: #aaa;
+        }
+
+        .user-increase {
+            background: #27ae60;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 5px;
+            vertical-align: super;
+        }
+
         /* Loading state */
         .loading {
             text-align: center;
@@ -265,7 +358,7 @@
         }
 
         /* Simplified dark mode */
-        body.simplified-dark-mode .widget:not(.time-widget):not(.weather-widget):not(.bus-widget):not(.uptime-widget) {
+        body.simplified-dark-mode .widget:not(.weather-widget):not(.bus-widget):not(.uptime-widget) {
             display: none;
         }
     </style>
@@ -274,6 +367,9 @@
     <div class="container">
         <div class="header">
             <h1>Dashboard</h1>
+            <div class="time-display" id="time-display">
+                <div class="loading">Loading...</div>
+            </div>
         </div>
 
         <div class="dashboard">
@@ -281,14 +377,6 @@
             <div class="widget weather-widget">
                 <h2>Weather</h2>
                 <div class="weather-display" id="weather-display">
-                    <div class="loading">Loading...</div>
-                </div>
-            </div>
-
-            <!-- Time Widget -->
-            <div class="widget time-widget">
-                <h2>Time</h2>
-                <div class="time-display" id="time-display">
                     <div class="loading">Loading...</div>
                 </div>
             </div>
@@ -303,7 +391,7 @@
 
             <!-- Uptime Widget -->
             <div class="widget uptime-widget">
-                <h2>Website Uptime</h2>
+                <h2>Website Info</h2>
                 <div id="uptime-display">
                     <div class="loading">Loading...</div>
                 </div>
@@ -403,7 +491,7 @@
                 display.innerHTML = '<div class="loading">Error loading time</div>';
                 return;
             }
-            display.innerHTML = `<div class="time-display">${time}</div>`;
+            display.innerHTML = time;
         }
 
         function displayBuses(buses) {
@@ -420,34 +508,27 @@
 
             let html = '';
             for (const bus of buses) {
-                if (bus.separator) {
-                    html += '<div class="bus-separator"></div>';
-                } else if (bus.no_departures) {
-                    html += '<div class="no-departures">No Departures</div>';
-                } else if (bus.error) {
-                    html += `<div class="no-departures">Error: ${bus.error}</div>`;
-                } else {
-                    const delayText = bus.delay ? ` <span class="bus-delay">(${bus.delay})</span>` : '';
-                    const vehicleText = bus.vehicle ? `<div class="bus-vehicle">${bus.vehicle}</div>` : '';
-                    
-                    // Parse the time to display just the time
-                    const timeObj = new Date(bus.aimed_time);
-                    const timeStr = timeObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-                    
-                    html += `
-                        <div class="bus-item">
-                            <div class="bus-line">${bus.line}</div>
-                            <div class="bus-destination">${bus.destination}</div>
-                            <div class="bus-time">${timeStr}${delayText}</div>
-                            ${vehicleText}
-                        </div>
-                    `;
-                }
+                const delayText = bus.delay ? ` <span class="bus-delay">(${bus.delay})</span>` : '';
+                const vehicleText = bus.vehicle ? `<div class="bus-vehicle">${bus.vehicle}</div>` : '';
+                
+                // Parse the time to display just the time
+                const timeObj = new Date(bus.aimed_time);
+                const timeStr = timeObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                
+                html += `
+                    <div class="bus-item">
+                        <div class="bus-line">${bus.line}</div>
+                        <div class="bus-destination">${bus.destination}</div>
+                        <div class="bus-time">${timeStr}${delayText}</div>
+                        ${vehicleText}
+                    </div>
+                `;
             }
             display.innerHTML = html;
         }
 
-        let lastUptimeStatus = null;
+        let lastEeveeitStatus = null;
+        let lastJellyfinStatus = null;
 
         function displayUptime(data) {
             const display = document.getElementById('uptime-display');
@@ -456,21 +537,70 @@
                 return;
             }
 
-            const statusClass = `uptime-${data.status}`;
-            const statusText = data.status.toUpperCase();
-            
-            // Check if status changed and play sound
-            if (lastUptimeStatus !== null && lastUptimeStatus !== data.status && data.status_changed) {
+            // Check eeveeit.uk status changes
+            if (lastEeveeitStatus !== null && lastEeveeitStatus !== data.eeveeit.status && data.eeveeit.status_changed) {
                 playDing();
             }
-            lastUptimeStatus = data.status;
+            lastEeveeitStatus = data.eeveeit.status;
 
-            const lastCheck = data.last_check ? new Date(data.last_check).toLocaleTimeString('en-GB') : 'Unknown';
+            // Check jellyfin status changes
+            if (lastJellyfinStatus !== null && lastJellyfinStatus !== data.jellyfin.status && data.jellyfin.status_changed) {
+                playDing();
+            }
+            lastJellyfinStatus = data.jellyfin.status;
+
+            const eeveeitStatusClass = `uptime-${data.eeveeit.status}`;
+            const eeveeitStatusText = data.eeveeit.status.toUpperCase();
+            const eeveeitLastCheck = data.eeveeit.last_check ? new Date(data.eeveeit.last_check).toLocaleTimeString('en-GB') : 'Unknown';
+
+            const jellyfinStatusClass = `uptime-${data.jellyfin.status}`;
+            const jellyfinStatusText = data.jellyfin.status.toUpperCase();
+            const jellyfinLastCheck = data.jellyfin.last_check ? new Date(data.jellyfin.last_check).toLocaleTimeString('en-GB') : 'Unknown';
+
+            let siteInfoHtml = '';
+            if (data.site_info.services > 0 || data.site_info.operators > 0 || data.site_info.vehicles > 0 || data.site_info.users > 0) {
+                const userIncreaseIndicator = data.site_info.users_increased ? 
+                    '<span class="user-increase">+1</span>' : '';
+                
+                siteInfoHtml = `
+                    <div class="site-info">
+                        <div class="site-info-title">Site Statistics</div>
+                        <div class="site-info-stats">
+                            <div class="site-info-stat">
+                                <div class="site-info-stat-value">${data.site_info.services}</div>
+                                <div class="site-info-stat-label">Services</div>
+                            </div>
+                            <div class="site-info-stat">
+                                <div class="site-info-stat-value">${data.site_info.operators}</div>
+                                <div class="site-info-stat-label">Operators</div>
+                            </div>
+                            <div class="site-info-stat">
+                                <div class="site-info-stat-value">${data.site_info.vehicles}</div>
+                                <div class="site-info-stat-label">Vehicles</div>
+                            </div>
+                            <div class="site-info-stat">
+                                <div class="site-info-stat-value">${data.site_info.users}${userIncreaseIndicator}</div>
+                                <div class="site-info-stat-label">Users</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
 
             display.innerHTML = `
-                <div class="uptime-status ${statusClass}">${statusText}</div>
-                <div class="uptime-url">eeveeit.uk</div>
-                <div class="uptime-last-check">Last check: ${lastCheck}</div>
+                <div class="uptime-websites">
+                    <div class="uptime-website">
+                        <div class="uptime-website-name">eeveeit.uk</div>
+                        <div class="uptime-website-status ${eeveeitStatusClass}">${eeveeitStatusText}</div>
+                        <div class="uptime-last-check">Last check: ${eeveeitLastCheck}</div>
+                    </div>
+                    <div class="uptime-website">
+                        <div class="uptime-website-name">jellyfin.eeveeit.uk</div>
+                        <div class="uptime-website-status ${jellyfinStatusClass}">${jellyfinStatusText}</div>
+                        <div class="uptime-last-check">Last check: ${jellyfinLastCheck}</div>
+                    </div>
+                </div>
+                ${siteInfoHtml}
             `;
         }
 

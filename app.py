@@ -9,22 +9,73 @@ app = Flask(__name__)
 
 # Global state for uptime monitoring
 uptime_state = {
-    'status': 'unknown',
-    'last_check': None,
-    'status_changed': False
+    'eeveeit': {
+        'status': 'unknown',
+        'last_check': None,
+        'status_changed': False
+    },
+    'jellyfin': {
+        'status': 'unknown',
+        'last_check': None,
+        'status_changed': False
+    },
+    'site_info': {
+        'services': 0,
+        'operators': 0,
+        'vehicles': 0,
+        'users': 0,
+        'last_fetch': None,
+        'users_increased': False
+    },
+    'user_history': []  # Store tuples of (timestamp, user_count)
 }
 
-# Hardcoded weather (simulated)
 def get_weather():
-    return {
-        'temperature': 18,
-        'condition': 'Partly Cloudy',
-        'icon': '⛅'
-    }
+    try:
+        # Using wttr.in for Titchfield, England (no API key required)
+        response = requests.get('https://wttr.in/Titchfield?format=j1', timeout=10)
+        data = response.json()
+        
+        current = data['current_condition'][0]
+        temp_c = int(current['temp_C'])
+        condition = current['weatherDesc'][0]['value']
+        
+        # Map weather conditions to icons
+        condition_lower = condition.lower()
+        if 'sunny' in condition_lower or 'clear' in condition_lower:
+            icon = '☀️'
+        elif 'cloud' in condition_lower or 'overcast' in condition_lower:
+            icon = '☁️'
+        elif 'rain' in condition_lower or 'drizzle' in condition_lower or 'shower' in condition_lower:
+            icon = '🌧️'
+        elif 'snow' in condition_lower:
+            icon = '❄️'
+        elif 'thunder' in condition_lower:
+            icon = '⛈️'
+        elif 'fog' in condition_lower or 'mist' in condition_lower:
+            icon = '🌫️'
+        elif 'partly' in condition_lower:
+            icon = '⛅'
+        else:
+            icon = '🌤️'
+        
+        return {
+            'temperature': temp_c,
+            'condition': condition,
+            'icon': icon
+        }
+    except Exception as e:
+        print(f"Error fetching weather: {e}")
+        # Fallback to hardcoded values if API fails
+        return {
+            'temperature': 18,
+            'condition': 'Partly Cloudy',
+            'icon': '⛅'
+        }
 
 def get_time():
     london = pytz.timezone('Europe/London')
-    return datetime.datetime.now(london).strftime('%H:%M:%S')
+    return datetime.now(london).strftime('%H:%M:%S')
 
 def get_bus_data():
     stops = [
@@ -37,10 +88,7 @@ def get_bus_data():
     all_buses = []
     operator = None
     
-    for i, stop in enumerate(stops):
-        if i == 2:  # Add line separator between stops 2 and 3
-            all_buses.append({'separator': True})
-        
+    for stop in stops:
         try:
             response = requests.get(f'https://bustimes.org/stops/{stop}/times.json', timeout=5)
             data = response.json()
@@ -58,10 +106,8 @@ def get_bus_data():
                         'trip_id': bus['trip_id']
                     }
                     all_buses.append(bus_info)
-            else:
-                all_buses.append({'no_departures': True})
         except Exception as e:
-            all_buses.append({'error': str(e)})
+            print(f"Error fetching stop {stop}: {e}")
     
     # Fetch vehicle info if we have an operator
     if operator:
@@ -83,14 +129,33 @@ def get_bus_data():
         except Exception as e:
             print(f"Error fetching vehicles: {e}")
     
-    return all_buses
+    # Filter out buses that have already departed and sort by time
+    now = datetime.datetime.now(pytz.UTC)
+    valid_buses = []
+    
+    for bus in all_buses:
+        try:
+            bus_time = datetime.datetime.fromisoformat(bus['aimed_time'].replace('+00:00', '+00:00'))
+            if bus_time > now:
+                valid_buses.append(bus)
+        except:
+            # If we can't parse the time, include it anyway
+            valid_buses.append(bus)
+    
+    # Sort by aimed_time
+    valid_buses.sort(key=lambda x: x['aimed_time'])
+    
+    # Cap at next 4 departures
+    valid_buses = valid_buses[:4]
+    
+    return valid_buses
 
 def check_uptime():
     global uptime_state
-    url = 'https://eeveeit.uk'
     
+    # Check eeveeit.uk
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get('https://eeveeit.uk', timeout=10)
         
         new_status = 'up'
         if response.status_code in [404, 502]:
@@ -98,22 +163,86 @@ def check_uptime():
         elif response.status_code >= 400:
             new_status = 'error'
         
-        if uptime_state['status'] != new_status and uptime_state['status'] != 'unknown':
-            uptime_state['status_changed'] = True
+        if uptime_state['eeveeit']['status'] != new_status and uptime_state['eeveeit']['status'] != 'unknown':
+            uptime_state['eeveeit']['status_changed'] = True
         else:
-            uptime_state['status_changed'] = False
+            uptime_state['eeveeit']['status_changed'] = False
         
-        uptime_state['status'] = new_status
-        uptime_state['last_check'] = datetime.datetime.now().isoformat()
+        uptime_state['eeveeit']['status'] = new_status
+        uptime_state['eeveeit']['last_check'] = datetime.datetime.now().isoformat()
         
     except Exception as e:
-        if uptime_state['status'] != 'error' and uptime_state['status'] != 'unknown':
-            uptime_state['status_changed'] = True
+        if uptime_state['eeveeit']['status'] != 'error' and uptime_state['eeveeit']['status'] != 'unknown':
+            uptime_state['eeveeit']['status_changed'] = True
         else:
-            uptime_state['status_changed'] = False
+            uptime_state['eeveeit']['status_changed'] = False
         
-        uptime_state['status'] = 'error'
-        uptime_state['last_check'] = datetime.datetime.now().isoformat()
+        uptime_state['eeveeit']['status'] = 'error'
+        uptime_state['eeveeit']['last_check'] = datetime.datetime.now().isoformat()
+    
+    # Check jellyfin.eeveeit.uk
+    try:
+        response = requests.get('https://jellyfin.eeveeit.uk', timeout=10)
+        
+        new_status = 'up'
+        if response.status_code in [404, 502]:
+            new_status = 'down'
+        elif response.status_code >= 400:
+            new_status = 'error'
+        
+        if uptime_state['jellyfin']['status'] != new_status and uptime_state['jellyfin']['status'] != 'unknown':
+            uptime_state['jellyfin']['status_changed'] = True
+        else:
+            uptime_state['jellyfin']['status_changed'] = False
+        
+        uptime_state['jellyfin']['status'] = new_status
+        uptime_state['jellyfin']['last_check'] = datetime.datetime.now().isoformat()
+        
+    except Exception as e:
+        if uptime_state['jellyfin']['status'] != 'error' and uptime_state['jellyfin']['status'] != 'unknown':
+            uptime_state['jellyfin']['status_changed'] = True
+        else:
+            uptime_state['jellyfin']['status_changed'] = False
+        
+        uptime_state['jellyfin']['status'] = 'error'
+        uptime_state['jellyfin']['last_check'] = datetime.datetime.now().isoformat()
+    
+    # Fetch site info
+    try:
+        response = requests.get('https://eeveeit.uk/api/site-info', timeout=10)
+        data = response.json()
+        
+        current_users = data.get('users', 0)
+        now = datetime.datetime.now()
+        
+        # Add current user count to history
+        uptime_state['user_history'].append((now, current_users))
+        
+        # Remove entries older than 12 hours
+        twelve_hours_ago = now - timedelta(hours=12)
+        uptime_state['user_history'] = [
+            (timestamp, count) for timestamp, count in uptime_state['user_history']
+            if timestamp > twelve_hours_ago
+        ]
+        
+        # Check if user count has increased in the past 12 hours
+        users_increased = False
+        if len(uptime_state['user_history']) > 1:
+            # Get the minimum user count from the past 12 hours
+            min_users = min(count for _, count in uptime_state['user_history'])
+            users_increased = current_users > min_users
+        
+        uptime_state['site_info'] = {
+            'services': data.get('services', 0),
+            'operators': data.get('operators', 0),
+            'vehicles': data.get('vehicles', 0),
+            'users': current_users,
+            'last_fetch': datetime.datetime.now().isoformat(),
+            'users_increased': users_increased
+        }
+    except Exception as e:
+        print(f"Error fetching site info: {e}")
+        uptime_state['site_info']['last_fetch'] = datetime.datetime.now().isoformat()
 
 def uptime_monitor():
     while True:
