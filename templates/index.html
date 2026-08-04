@@ -123,12 +123,13 @@
         }
 
         .sun-time {
-            text-align: center;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .sun-icon {
             font-size: 1.2rem;
-            margin-bottom: 5px;
         }
 
         /* Time Display */
@@ -166,14 +167,16 @@
         }
 
         .nav-buttons {
+            position: fixed;
+            top: 20px;
+            left: 20px;
             display: flex;
-            justify-content: center;
             gap: 15px;
-            margin-top: 20px;
+            z-index: 1000;
         }
 
         .nav-btn {
-            padding: 10px 20px;
+            padding: 10px 15px;
             border: none;
             border-radius: 8px;
             font-size: 1rem;
@@ -343,17 +346,6 @@
             color: #aaa;
         }
 
-        .uptime-last-check {
-            text-align: center;
-            color: #999;
-            font-size: 0.8rem;
-            margin-top: 10px;
-        }
-
-        .dark-mode .uptime-last-check {
-            color: #777;
-        }
-
         .uptime-websites {
             display: flex;
             flex-direction: column;
@@ -476,6 +468,10 @@
 </head>
 <body>
     <div class="container">
+        <div class="nav-buttons">
+            <button class="nav-btn" onclick="window.location.href='/alarms'">⏰ Alarms</button>
+            <button class="nav-btn" onclick="window.location.href='/timer'">⏱️ Timer</button>
+        </div>
         <button class="lock-button" onclick="toggleLock()">🔒 Lock</button>
         
         <div class="header">
@@ -488,10 +484,6 @@
             </div>
             <div class="timer-display hidden" id="timer-display">
                 Timer: <span id="timer-time">00:00:00</span>
-            </div>
-            <div class="nav-buttons">
-                <button class="nav-btn" onclick="window.location.href='/alarms'">⏰ Alarms</button>
-                <button class="nav-btn" onclick="window.location.href='/timer'">⏱️ Timer</button>
             </div>
         </div>
 
@@ -640,11 +632,11 @@
                     <div class="sun-times">
                         <div class="sun-time">
                             <div class="sun-icon">🌅</div>
-                            <div>${data.sunrise}</div>
+                            <div>Sunrise: ${data.sunrise}</div>
                         </div>
                         <div class="sun-time">
                             <div class="sun-icon">🌇</div>
-                            <div>${data.sunset}</div>
+                            <div>Sunset: ${data.sunset}</div>
                         </div>
                     </div>
                 </div>
@@ -805,11 +797,9 @@
 
             const eeveeitStatusClass = `uptime-${data.eeveeit.status}`;
             const eeveeitStatusText = data.eeveeit.status.toUpperCase();
-            const eeveeitLastCheck = data.eeveeit.last_check ? new Date(data.eeveeit.last_check).toLocaleTimeString('en-GB') : 'Unknown';
 
             const jellyfinStatusClass = `uptime-${data.jellyfin.status}`;
             const jellyfinStatusText = data.jellyfin.status.toUpperCase();
-            const jellyfinLastCheck = data.jellyfin.last_check ? new Date(data.jellyfin.last_check).toLocaleTimeString('en-GB') : 'Unknown';
 
             let siteInfoHtml = '';
             if (data.site_info.services > 0 || data.site_info.operators > 0 || data.site_info.vehicles > 0 || data.site_info.users > 0) {
@@ -846,12 +836,10 @@
                     <div class="uptime-website">
                         <div class="uptime-website-name">eeveeit.uk</div>
                         <div class="uptime-website-status ${eeveeitStatusClass}">${eeveeitStatusText}</div>
-                        <div class="uptime-last-check">Last check: ${eeveeitLastCheck}</div>
                     </div>
                     <div class="uptime-website">
                         <div class="uptime-website-name">jellyfin.eeveeit.uk</div>
                         <div class="uptime-website-status ${jellyfinStatusClass}">${jellyfinStatusText}</div>
-                        <div class="uptime-last-check">Last check: ${jellyfinLastCheck}</div>
                     </div>
                 </div>
                 ${siteInfoHtml}
