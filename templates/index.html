@@ -715,9 +715,32 @@
                 return;
             }
 
+            // Function to parse ISO 8601 duration and convert to minutes
+            function parseDurationToMinutes(duration) {
+                if (!duration) return null;
+                
+                // Parse format like P0DT00H01M19S
+                const match = duration.match(/P(?:(\d+)D)?T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+                if (!match) return null;
+                
+                const days = parseInt(match[1] || '0', 10);
+                const hours = parseInt(match[2] || '0', 10);
+                const minutes = parseInt(match[3] || '0', 10);
+                const seconds = parseInt(match[4] || '0', 10);
+                
+                const totalMinutes = (days * 24 * 60) + (hours * 60) + minutes + (seconds / 60);
+                return totalMinutes;
+            }
+
             let html = '';
             for (const bus of buses) {
-                const delayText = bus.delay ? ` <span class="bus-delay">(${bus.delay})</span>` : '';
+                let delayText = '';
+                if (bus.delay) {
+                    const delayMinutes = parseDurationToMinutes(bus.delay);
+                    if (delayMinutes !== null) {
+                        delayText = ` <span class="bus-delay">(${delayMinutes.toFixed(1)} min)</span>`;
+                    }
+                }
                 const vehicleText = bus.vehicle ? `<div class="bus-vehicle">${bus.vehicle}</div>` : '';
                 
                 // Parse the time to display just the time
