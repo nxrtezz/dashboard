@@ -314,10 +314,88 @@
             color: #888;
             font-size: 0.8rem;
             margin-top: 5px;
+            cursor: pointer;
         }
 
         .dark-mode .bus-vehicle {
             color: #777;
+        }
+
+        .bus-vehicle:hover {
+            color: #667eea;
+        }
+
+        .dark-mode .bus-vehicle:hover {
+            color: #a78bfa;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 1000px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 15px 20px;
+            background: #667eea;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .modal-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px 15px;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
+
+        .modal-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .modal-body iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
         }
 
         .no-departures {
@@ -538,9 +616,44 @@
         </div>
     </div>
 
+    <!-- Journey Modal -->
+    <div class="modal" id="journey-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Bus Journey</h3>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <iframe id="journey-iframe" src=""></iframe>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Audio context for ding sound
         let audioContext = null;
+
+        // Modal functions
+        function openJourneyModal(journeyId) {
+            const modal = document.getElementById('journey-modal');
+            const iframe = document.getElementById('journey-iframe');
+            iframe.src = `https://bustimes.org/journeys/${journeyId}`;
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('journey-modal');
+            const iframe = document.getElementById('journey-iframe');
+            iframe.src = '';
+            modal.classList.remove('active');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('journey-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
 
         function playDing() {
             if (!audioContext) {
@@ -774,7 +887,9 @@
                         delayText = ` <span class="bus-delay">(${delayMinutes.toFixed(1)} min)</span>`;
                     }
                 }
-                const vehicleText = bus.vehicle ? `<div class="bus-vehicle">${bus.vehicle}</div>` : '';
+                const vehicleText = bus.vehicle && bus.journey_id ? 
+                    `<div class="bus-vehicle" onclick="openJourneyModal(${bus.journey_id})">${bus.vehicle}</div>` : 
+                    (bus.vehicle ? `<div class="bus-vehicle">${bus.vehicle}</div>` : '');
                 
                 // Parse the time to display just the time
                 const timeObj = new Date(bus.aimed_time);
