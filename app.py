@@ -31,7 +31,12 @@ uptime_state = {
         'last_fetch': None,
         'users_increased': False
     },
-    'user_history': []  # Store tuples of (timestamp, user_count)
+    'user_history': [],  # Store tuples of (timestamp, user_count)
+    'uptime_kuma': {
+        'monitors': [],
+        'groups': {},
+        'last_fetch': None
+    }
 }
 
 # Alarm state
@@ -213,59 +218,163 @@ def get_bus_data():
 def check_uptime():
     global uptime_state
     
-    # Check eeveeit.uk
+    # Fetch data from Uptime Kuma
     try:
-        response = requests.get('https://eeveeit.uk', timeout=10)
+        uptime_kuma_url = os.getenv('UPTIME_KUMA_URL')
+        uptime_kuma_api_key = os.getenv('UPTIME_KUMA_API_KEY')
         
-        new_status = 'up'
-        if response.status_code in [404, 502]:
-            new_status = 'down'
-        elif response.status_code >= 400:
-            new_status = 'error'
-        
-        if uptime_state['eeveeit']['status'] != new_status and uptime_state['eeveeit']['status'] != 'unknown':
-            uptime_state['eeveeit']['status_changed'] = True
+        if uptime_kuma_url and uptime_kuma_api_key:
+            headers = {
+                'Authorization': f'Bearer {uptime_kuma_api_key}'
+            }
+            
+            response = requests.get(f'{uptime_kuma_url}/api/monitors', headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                monitors_data = response.json()
+                
+                # Fetch group information
+                groups_response = requests.get(f'{uptime_kuma_url}/api/groups', headers=headers, timeout=10)
+                groups_data = {}
+                if groups_response.status_code == 200:
+                    for group in groups_response.json():
+                        groups_data[str(group['id'])] = group['name']
+                
+                # Process monitors and update state
+                monitors = []
+                groups = {}
+                
+                for monitor in monitors_data:
+                    monitor_info = {
+                        'id': monitor.get('id'),
+                        'name': monitor.get('name'),
+                        'status': monitor.get('status'),  # 0=down, 1=up, 2=pending, 3=unknown
+                        'uptime': monitor.get('uptime', 0),
+                        'url': monitor.get('url'),
+                        'type': monitor.get('type'),
+                        'group': monitor.get('parent')  # Group ID
+                    }
+                    
+                    # Map Uptime Kuma status to our status
+                    if monitor_info['status'] == 1:
+                        monitor_info['status_text'] = 'up'
+                    elif monitor_info['status'] == 0:
+                        monitor_info['status_text'] = 'down'
+                    elif monitor_info['status'] == 2:
+                        monitor_info['status_text'] = 'pending'
+                    else:
+                        monitor_info['status_text'] = 'unknown'
+                    
+                    monitors.append(monitor_info)
+                    
+                    # Group monitors by their group
+                    group_id = monitor_info['group']
+                    if group_id:
+                        if group_id not in groups:
+                            groups[group_id] = {
+                                'monitors': [],
+                                'total_uptime': 0,
+                                'monitor_count': 0
+                            }
+                        groups[group_id]['monitors'].append(monitor_info)
+                        groups[group_id]['total_uptime'] += monitor_info['uptime']
+                        groups[group_id]['monitor_count'] += 1
+                    
+                    # Update eeveeit and jellyfin status if we find matching monitors
+                    if 'eeveeit' in monitor_info['name'].lower():
+                        new_status = monitor_info['status_text']
+                        if uptime_state['eeveeit']['status'] != new_status and uptime_state['eeveeit']['status'] != 'unknown':
+                            uptime_state['eeveeit']['status_changed'] = True
+                        else:
+                            uptime_state['eeveeit']['status_changed'] = False
+                        uptime_state['eeveeit']['status'] = new_status
+                        uptime_state['eeveeit']['last_check'] = datetime.datetime.now().isoformat()
+                    
+                    if 'jellyfin' in monitor_info['name'].lower():
+                        new_status = monitor_info['status_text']
+                        if uptime_state['jellyfin']['status'] != new_status and uptime_state['jellyfin']['status'] != 'unknown':
+                            uptime_state['jellyfin']['status_changed'] = True
+                        else:
+                            uptime_state['jellyfin']['status_changed'] = False
+                        uptime_state['jellyfin']['status'] = new_status
+                        uptime_state['jellyfin']['last_check'] = datetime.datetime.now().isoformat()
+                
+                # Calculate overall uptime for each group
+                for group_id in groups:
+                    if groups[group_id]['monitor_count'] > 0:
+                        groups[group_id]['overall_uptime'] = groups[group_id]['total_uptime'] / groups[group_id]['monitor_count']
+                    else:
+                        groups[group_id]['overall_uptime'] = 0
+                    # Add group name
+                    groups[group_id]['name'] = groups_data.get(group_id, f'Group {group_id}')
+                
+                uptime_state['uptime_kuma']['monitors'] = monitors
+                uptime_state['uptime_kuma']['groups'] = groups
+                uptime_state['uptime_kuma']['last_fetch'] = datetime.datetime.now().isoformat()
+            else:
+                print(f"Uptime Kuma API returned status {response.status_code}")
         else:
-            uptime_state['eeveeit']['status_changed'] = False
-        
-        uptime_state['eeveeit']['status'] = new_status
-        uptime_state['eeveeit']['last_check'] = datetime.datetime.now().isoformat()
-        
+            print("Uptime Kuma URL or API key not configured")
     except Exception as e:
-        if uptime_state['eeveeit']['status'] != 'error' and uptime_state['eeveeit']['status'] != 'unknown':
-            uptime_state['eeveeit']['status_changed'] = True
-        else:
-            uptime_state['eeveeit']['status_changed'] = False
-        
-        uptime_state['eeveeit']['status'] = 'error'
-        uptime_state['eeveeit']['last_check'] = datetime.datetime.now().isoformat()
+        print(f"Error fetching from Uptime Kuma: {e}")
     
-    # Check jellyfin.eeveeit.uk
-    try:
-        response = requests.get('https://jellyfin.eeveeit.uk', timeout=10)
+    # Fallback to manual checks if Uptime Kuma fails or is not configured
+    if not uptime_state['uptime_kuma']['monitors']:
+        # Check eeveeit.uk
+        try:
+            response = requests.get('https://eeveeit.uk', timeout=10)
+            
+            new_status = 'up'
+            if response.status_code in [404, 502]:
+                new_status = 'down'
+            elif response.status_code >= 400:
+                new_status = 'error'
+            
+            if uptime_state['eeveeit']['status'] != new_status and uptime_state['eeveeit']['status'] != 'unknown':
+                uptime_state['eeveeit']['status_changed'] = True
+            else:
+                uptime_state['eeveeit']['status_changed'] = False
+            
+            uptime_state['eeveeit']['status'] = new_status
+            uptime_state['eeveeit']['last_check'] = datetime.datetime.now().isoformat()
+            
+        except Exception as e:
+            print(f"Error checking eeveeit.uk: {e}")
+            if uptime_state['eeveeit']['status'] != 'error' and uptime_state['eeveeit']['status'] != 'unknown':
+                uptime_state['eeveeit']['status_changed'] = True
+            else:
+                uptime_state['eeveeit']['status_changed'] = False
+            
+            uptime_state['eeveeit']['status'] = 'error'
+            uptime_state['eeveeit']['last_check'] = datetime.datetime.now().isoformat()
         
-        new_status = 'up'
-        if response.status_code in [404, 502]:
-            new_status = 'down'
-        elif response.status_code >= 400:
-            new_status = 'error'
-        
-        if uptime_state['jellyfin']['status'] != new_status and uptime_state['jellyfin']['status'] != 'unknown':
-            uptime_state['jellyfin']['status_changed'] = True
-        else:
-            uptime_state['jellyfin']['status_changed'] = False
-        
-        uptime_state['jellyfin']['status'] = new_status
-        uptime_state['jellyfin']['last_check'] = datetime.datetime.now().isoformat()
-        
-    except Exception as e:
-        if uptime_state['jellyfin']['status'] != 'error' and uptime_state['jellyfin']['status'] != 'unknown':
-            uptime_state['jellyfin']['status_changed'] = True
-        else:
-            uptime_state['jellyfin']['status_changed'] = False
-        
-        uptime_state['jellyfin']['status'] = 'error'
-        uptime_state['jellyfin']['last_check'] = datetime.datetime.now().isoformat()
+        # Check jellyfin.eeveeit.uk
+        try:
+            response = requests.get('https://jellyfin.eeveeit.uk', timeout=10)
+            
+            new_status = 'up'
+            if response.status_code in [404, 502]:
+                new_status = 'down'
+            elif response.status_code >= 400:
+                new_status = 'error'
+            
+            if uptime_state['jellyfin']['status'] != new_status and uptime_state['jellyfin']['status'] != 'unknown':
+                uptime_state['jellyfin']['status_changed'] = True
+            else:
+                uptime_state['jellyfin']['status_changed'] = False
+            
+            uptime_state['jellyfin']['status'] = new_status
+            uptime_state['jellyfin']['last_check'] = datetime.datetime.now().isoformat()
+            
+        except Exception as e:
+            print(f"Error checking jellyfin.eeveeit.uk: {e}")
+            if uptime_state['jellyfin']['status'] != 'error' and uptime_state['jellyfin']['status'] != 'unknown':
+                uptime_state['jellyfin']['status_changed'] = True
+            else:
+                uptime_state['jellyfin']['status_changed'] = False
+            
+            uptime_state['jellyfin']['status'] = 'error'
+            uptime_state['jellyfin']['last_check'] = datetime.datetime.now().isoformat()
     
     # Fetch site info
     try:
@@ -407,7 +516,8 @@ def api_uptime():
     return jsonify({
         'eeveeit': uptime_state['eeveeit'],
         'jellyfin': uptime_state['jellyfin'],
-        'site_info': uptime_state['site_info']
+        'site_info': uptime_state['site_info'],
+        'uptime_kuma': uptime_state['uptime_kuma']
     })
 
 @app.route('/api/alarms', methods=['GET'])

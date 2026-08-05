@@ -79,17 +79,22 @@
         .weather-display {
             display: flex;
             flex-direction: column;
-            height: 100%;
-            gap: 0;
+            gap: 10px;
         }
 
         .weather-row {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
             display: flex;
             align-items: center;
-            justify-content: center;
             gap: 12px;
-            flex: 1;
-            padding: 8px 0;
+        }
+
+        .dark-mode .weather-row {
+            background: rgba(118, 75, 162, 0.2);
+            border-left-color: #764ba2;
         }
 
         .weather-icon {
@@ -104,62 +109,36 @@
 
         .weather-info {
             flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .temperature {
+        .weather-main-text {
             font-size: 1.2rem;
             font-weight: bold;
             color: #333;
         }
 
-        .dark-mode .temperature {
+        .dark-mode .weather-main-text {
             color: #fff;
         }
 
-        .condition {
+        .weather-secondary-text {
             font-size: 1rem;
             color: #666;
         }
 
-        .dark-mode .condition {
+        .dark-mode .weather-secondary-text {
             color: #aaa;
         }
 
-        .weather-uv {
-            font-size: 1rem;
-            color: #666;
-            margin-left: 8px;
-        }
-
-        .dark-mode .weather-uv {
-            color: #aaa;
-        }
-
-        .rain-percent {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #667eea;
-        }
-
-        .dark-mode .rain-percent {
-            color: #a78bfa;
-        }
-
-        .rain-mm {
+        .weather-right {
             font-size: 1rem;
             color: #666;
         }
 
-        .dark-mode .rain-mm {
-            color: #aaa;
-        }
-
-        .sun-time {
-            font-size: 1.2rem;
-            color: #666;
-        }
-
-        .dark-mode .sun-time {
+        .dark-mode .weather-right {
             color: #aaa;
         }
 
@@ -754,32 +733,69 @@
                 display.innerHTML = '<div class="loading">Error loading weather</div>';
                 return;
             }
+
+            // Calculate day and night durations
+            let dayDuration = '--';
+            let nightDuration = '--';
+            
+            try {
+                const sunriseMatch = data.sunrise.match(/(\d+):(\d+)/);
+                const sunsetMatch = data.sunset.match(/(\d+):(\d+)/);
+                
+                if (sunriseMatch && sunsetMatch) {
+                    const sunriseHours = parseInt(sunriseMatch[1]);
+                    const sunriseMins = parseInt(sunriseMatch[2]);
+                    const sunsetHours = parseInt(sunsetMatch[1]);
+                    const sunsetMins = parseInt(sunsetMatch[2]);
+                    
+                    const sunriseMinsTotal = sunriseHours * 60 + sunriseMins;
+                    const sunsetMinsTotal = sunsetHours * 60 + sunsetMins;
+                    
+                    // Day duration (sunrise to sunset)
+                    const dayMins = sunsetMinsTotal - sunriseMinsTotal;
+                    const dayHrs = Math.floor(dayMins / 60);
+                    const dayRemMins = dayMins % 60;
+                    dayDuration = `${dayHrs}h ${dayRemMins}m`;
+                    
+                    // Night duration (sunset to sunrise next day)
+                    const nightMins = (24 * 60) - dayMins;
+                    const nightHrs = Math.floor(nightMins / 60);
+                    const nightRemMins = nightMins % 60;
+                    nightDuration = `${nightHrs}h ${nightRemMins}m`;
+                }
+            } catch (e) {
+                console.error('Error calculating durations:', e);
+            }
+
             display.innerHTML = `
                 <div class="weather-row">
                     <div class="weather-icon">
                         <img src="/static/icons/${data.icon}.png" alt="${data.description}" width="40" height="40">
                     </div>
                     <div class="weather-info">
-                        <div class="temperature">${data.app_temp}°C <span class="condition">${data.description}</span> <span class="weather-uv">UV ${data.uv}</span></div>
+                        <div class="weather-main-text">${data.description}</div>
+                        <div class="weather-right">${data.app_temp}°C • UV ${data.uv}</div>
                     </div>
                 </div>
                 <div class="weather-row">
                     <div class="weather-icon">💧</div>
                     <div class="weather-info">
-                        <div class="rain-percent">${data.precip > 0 ? 'Rain' : 'No rain'}</div>
-                        <div class="rain-mm">${data.precip} mm</div>
+                        <div class="weather-main-text">${data.precip > 0 ? 'Rain' : 'No rain'}</div>
+                        <div class="weather-right">${data.precip} mm</div>
                     </div>
                 </div>
                 <div class="weather-row">
                     <div class="weather-icon">🌅</div>
                     <div class="weather-info">
-                        <div class="sun-time">Sunrise: ${data.sunrise}</div>
+                        <div class="weather-main-text">Sunrise: ${data.sunrise}</div>
+                        <div class="weather-right">Day: ${dayDuration}</div>
                     </div>
                 </div>
                 <div class="weather-row">
                     <div class="weather-icon">🌇</div>
                     <div class="weather-info">
-                        <div class="sun-time">Sunset: ${data.sunset}</div>
+                        <div class="weather-main-text">Sunset: ${data.sunset}</div>
+                        <div class="weather-right">Night: ${nightDuration}</div>
                     </div>
                 </div>
             `;
@@ -1003,6 +1019,42 @@
                 `;
             }
 
+            // Add Uptime Kuma monitor groups if available
+            let uptimeKumaHtml = '';
+            if (data.uptime_kuma && data.uptime_kuma.groups && Object.keys(data.uptime_kuma.groups).length > 0) {
+                const groupsHtml = Object.values(data.uptime_kuma.groups).map(group => {
+                    // Determine overall status based on if any monitor is down
+                    const hasDown = group.monitors.some(m => m.status_text === 'down');
+                    const hasPending = group.monitors.some(m => m.status_text === 'pending');
+                    const hasUnknown = group.monitors.some(m => m.status_text === 'unknown');
+                    
+                    let statusText = 'UP';
+                    if (hasDown) statusText = 'DOWN';
+                    else if (hasPending) statusText = 'PENDING';
+                    else if (hasUnknown) statusText = 'UNKNOWN';
+                    
+                    const statusClass = `uptime-${statusText.toLowerCase()}`;
+                    const uptimePercent = (group.overall_uptime * 100).toFixed(2);
+                    
+                    return `
+                        <div class="uptime-website">
+                            <div class="uptime-website-name">${group.name}</div>
+                            <div class="uptime-website-status ${statusClass}">${statusText}</div>
+                            <div class="uptime-url">Uptime: ${uptimePercent}% (${group.monitor_count} monitors)</div>
+                        </div>
+                    `;
+                }).join('');
+                
+                uptimeKumaHtml = `
+                    <div class="site-info">
+                        <div class="site-info-title">Uptime Kuma Groups</div>
+                        <div class="uptime-websites">
+                            ${groupsHtml}
+                        </div>
+                    </div>
+                `;
+            }
+
             display.innerHTML = `
                 <div class="uptime-websites">
                     <div class="uptime-website">
@@ -1015,6 +1067,7 @@
                     </div>
                 </div>
                 ${siteInfoHtml}
+                ${uptimeKumaHtml}
             `;
         }
 

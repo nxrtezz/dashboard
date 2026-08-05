@@ -49,7 +49,6 @@
             font-size: 1rem;
         }
 
-        .form-group input[type="datetime-local"],
         .form-group input[type="text"] {
             width: 100%;
             padding: 12px;
@@ -62,6 +61,252 @@
         .form-group input:focus {
             outline: none;
             border-color: #667eea;
+        }
+
+        /* Date/Time Picker */
+        .datetime-picker {
+            display: flex;
+            gap: 10px;
+        }
+
+        .date-display,
+        .time-display {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .date-display:hover,
+        .time-display:hover {
+            border-color: #667eea;
+        }
+
+        .date-display.selected,
+        .time-display.selected {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        /* Calendar Modal */
+        .calendar-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .calendar-modal.active {
+            display: flex;
+        }
+
+        .calendar-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-nav {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .calendar-nav:hover {
+            background: #5568d3;
+        }
+
+        .calendar-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            font-weight: bold;
+            color: #666;
+            padding: 10px;
+            font-size: 0.9rem;
+        }
+
+        .calendar-day {
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background 0.2s ease;
+            font-size: 1rem;
+        }
+
+        .calendar-day:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .calendar-day.selected {
+            background: #667eea;
+            color: white;
+        }
+
+        .calendar-day.other-month {
+            color: #ccc;
+        }
+
+        .calendar-day.today {
+            border: 2px solid #667eea;
+        }
+
+        .calendar-cancel {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: #95a5a6;
+            color: white;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+
+        .calendar-cancel:hover {
+            background: #7f8c8d;
+        }
+
+        /* Time Keypad Modal */
+        .time-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .time-modal.active {
+            display: flex;
+        }
+
+        .time-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 350px;
+            width: 100%;
+        }
+
+        .time-display-large {
+            background: #f0f0f0;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 3rem;
+            letter-spacing: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .time-keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .time-key {
+            padding: 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            background: #667eea;
+            color: white;
+            transition: background 0.2s ease;
+            min-width: 0;
+            width: 100%;
+            aspect-ratio: 1;
+        }
+
+        .time-key:hover {
+            background: #5568d3;
+        }
+
+        .time-key.clear {
+            background: #e74c3c;
+        }
+
+        .time-key.clear:hover {
+            background: #c0392b;
+        }
+
+        .time-key.submit {
+            background: #27ae60;
+        }
+
+        .time-key.submit:hover {
+            background: #219a52;
+        }
+
+        .time-key.empty {
+            background: transparent;
+            cursor: default;
+        }
+
+        .time-key.empty:hover {
+            background: transparent;
+        }
+
+        .time-cancel {
+            margin-top: 15px;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            background: #95a5a6;
+            color: white;
+            width: 100%;
+        }
+
+        .time-cancel:hover {
+            background: #7f8c8d;
         }
 
         .reasons-grid {
@@ -256,7 +501,11 @@
         
         <div class="form-group">
             <label for="return-time">When will you be back?</label>
-            <input type="datetime-local" id="return-time">
+            <div class="datetime-picker">
+                <div class="date-display" id="date-display" onclick="showCalendar()">Select Date</div>
+                <div class="time-display" id="time-display" onclick="showTimeKeypad()">Select Time</div>
+            </div>
+            <input type="hidden" id="return-time">
         </div>
 
         <div class="form-group">
@@ -277,6 +526,51 @@
         </div>
 
         <button class="back-btn" onclick="window.location.href='/'">← Back to Dashboard</button>
+    </div>
+
+    <!-- Calendar Modal -->
+    <div class="calendar-modal" id="calendar-modal">
+        <div class="calendar-container">
+            <div class="calendar-header">
+                <button class="calendar-nav" onclick="changeMonth(-1)">‹</button>
+                <div class="calendar-title" id="calendar-title">Month Year</div>
+                <button class="calendar-nav" onclick="changeMonth(1)">›</button>
+            </div>
+            <div class="calendar-grid">
+                <div class="calendar-day-header">Sun</div>
+                <div class="calendar-day-header">Mon</div>
+                <div class="calendar-day-header">Tue</div>
+                <div class="calendar-day-header">Wed</div>
+                <div class="calendar-day-header">Thu</div>
+                <div class="calendar-day-header">Fri</div>
+                <div class="calendar-day-header">Sat</div>
+            </div>
+            <div class="calendar-grid" id="calendar-days"></div>
+            <button class="calendar-cancel" onclick="hideCalendar()">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Time Keypad Modal -->
+    <div class="time-modal" id="time-modal">
+        <div class="time-container">
+            <h2>Select Time</h2>
+            <div class="time-display-large" id="time-display-large">00:00</div>
+            <div class="time-keypad">
+                <button class="time-key" onclick="addTimeDigit('1')">1</button>
+                <button class="time-key" onclick="addTimeDigit('2')">2</button>
+                <button class="time-key" onclick="addTimeDigit('3')">3</button>
+                <button class="time-key" onclick="addTimeDigit('4')">4</button>
+                <button class="time-key" onclick="addTimeDigit('5')">5</button>
+                <button class="time-key" onclick="addTimeDigit('6')">6</button>
+                <button class="time-key" onclick="addTimeDigit('7')">7</button>
+                <button class="time-key" onclick="addTimeDigit('8')">8</button>
+                <button class="time-key" onclick="addTimeDigit('9')">9</button>
+                <button class="time-key clear" onclick="clearTime()">Clear</button>
+                <button class="time-key" onclick="addTimeDigit('0')">0</button>
+                <button class="time-key submit" onclick="submitTime()">✓</button>
+            </div>
+            <button class="time-cancel" onclick="hideTimeKeypad()">Cancel</button>
+        </div>
     </div>
 
     <!-- PIN Setup Modal -->
@@ -306,6 +600,151 @@
         let selectedReason = null;
         let pinValue = '';
         let isSettingPin = true;
+        let selectedDate = null;
+        let selectedTime = null;
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        let timeValue = '';
+
+        // Calendar functions
+        function showCalendar() {
+            currentMonth = new Date().getMonth();
+            currentYear = new Date().getFullYear();
+            renderCalendar();
+            document.getElementById('calendar-modal').classList.add('active');
+        }
+
+        function hideCalendar() {
+            document.getElementById('calendar-modal').classList.remove('active');
+        }
+
+        function changeMonth(delta) {
+            currentMonth += delta;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            } else if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'];
+            document.getElementById('calendar-title').textContent = `${monthNames[currentMonth]} ${currentYear}`;
+
+            const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const today = new Date();
+
+            let html = '';
+            
+            // Empty cells for days before the first day of the month
+            for (let i = 0; i < firstDay; i++) {
+                html += '<div class="calendar-day other-month"></div>';
+            }
+
+            // Days of the month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const isToday = today.getDate() === day && 
+                               today.getMonth() === currentMonth && 
+                               today.getFullYear() === currentYear;
+                const isSelected = selectedDate && 
+                                  selectedDate.getDate() === day && 
+                                  selectedDate.getMonth() === currentMonth && 
+                                  selectedDate.getFullYear() === currentYear;
+                
+                let classes = 'calendar-day';
+                if (isToday) classes += ' today';
+                if (isSelected) classes += ' selected';
+                
+                html += `<div class="${classes}" onclick="selectDate(${day})">${day}</div>`;
+            }
+
+            document.getElementById('calendar-days').innerHTML = html;
+        }
+
+        function selectDate(day) {
+            selectedDate = new Date(currentYear, currentMonth, day);
+            const options = { weekday: 'short', month: 'short', day: 'numeric' };
+            document.getElementById('date-display').textContent = selectedDate.toLocaleDateString('en-GB', options);
+            document.getElementById('date-display').classList.add('selected');
+            hideCalendar();
+            updateDateTimeInput();
+        }
+
+        // Time keypad functions
+        function showTimeKeypad() {
+            timeValue = '';
+            updateTimeDisplay();
+            document.getElementById('time-modal').classList.add('active');
+        }
+
+        function hideTimeKeypad() {
+            document.getElementById('time-modal').classList.remove('active');
+        }
+
+        function addTimeDigit(digit) {
+            if (timeValue.length < 4) {
+                timeValue += digit;
+                updateTimeDisplay();
+            }
+        }
+
+        function clearTime() {
+            timeValue = '';
+            updateTimeDisplay();
+        }
+
+        function updateTimeDisplay() {
+            const display = document.getElementById('time-display-large');
+            if (timeValue.length === 0) {
+                display.textContent = '00:00';
+            } else if (timeValue.length <= 2) {
+                display.textContent = timeValue.padStart(2, '0') + ':00';
+            } else {
+                const hours = timeValue.substring(0, 2);
+                const minutes = timeValue.substring(2, 4);
+                display.textContent = `${hours}:${minutes}`;
+            }
+        }
+
+        function submitTime() {
+            if (timeValue.length !== 4) {
+                alert('Please enter a 4-digit time (HHMM)');
+                return;
+            }
+
+            const hours = parseInt(timeValue.substring(0, 2));
+            const minutes = parseInt(timeValue.substring(2, 4));
+
+            if (hours > 23 || minutes > 59) {
+                alert('Invalid time. Please enter a valid time (HHMM)');
+                return;
+            }
+
+            selectedTime = { hours, minutes };
+            const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+            document.getElementById('time-display').textContent = timeStr;
+            document.getElementById('time-display').classList.add('selected');
+            hideTimeKeypad();
+            updateDateTimeInput();
+        }
+
+        function updateDateTimeInput() {
+            if (selectedDate && selectedTime) {
+                const dateTime = new Date(
+                    selectedDate.getFullYear(),
+                    selectedDate.getMonth(),
+                    selectedDate.getDate(),
+                    selectedTime.hours,
+                    selectedTime.minutes
+                );
+                document.getElementById('return-time').value = dateTime.toISOString().slice(0, 16);
+            }
+        }
 
         // Handle reason selection
         document.querySelectorAll('.reason-option').forEach(option => {
