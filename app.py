@@ -170,7 +170,7 @@ def get_bus_data():
     # Fetch vehicle info if we have an operator
     if operator:
         try:
-            vehicles_response = requests.get(f'https://bustimes.org/vehicles.json?operator={operator}', timeout=5)
+            vehicles_response = requests.get(f'https://bustimes.org/vehicles.json?operator={operator.upper()}', timeout=5)
             vehicles_data = vehicles_response.json()
             
             # Create a mapping of trip_id to vehicle info
