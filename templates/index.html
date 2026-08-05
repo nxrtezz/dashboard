@@ -737,6 +737,8 @@
             }
         }
 
+        let isRedirecting = false;
+
         // Display functions
         function displayWeather(data) {
             const display = document.getElementById('weather-display');
@@ -1206,13 +1208,16 @@
             }
         }, 1000);
 
-        // Check lock state every second
+        // Check lock state every 5 seconds
         setInterval(async () => {
+            if (isRedirecting) return;
+            
             const lockState = await fetchLockState();
             if (lockState && lockState.locked) {
+                isRedirecting = true;
                 window.location.href = '/locked';
             }
-        }, 1000);
+        }, 5000);
 
         // Update other data every 30 seconds
         setInterval(updateAll, 30000);
