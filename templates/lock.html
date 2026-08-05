@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lock Screen</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .lock-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .lock-container h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .form-group input[type="datetime-local"],
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .reasons-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .reason-option {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .reason-option:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .reason-option.selected {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.2);
+            font-weight: bold;
+        }
+
+        .lock-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .lock-btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .lock-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .lock-btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .lock-btn-secondary {
+            background: #764ba2;
+            color: white;
+        }
+
+        .back-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+            backdrop-filter: blur(10px);
+            transition: background 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        /* PIN Keypad Modal */
+        .pin-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .pin-modal.active {
+            display: flex;
+        }
+
+        .pin-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 350px;
+            width: 100%;
+        }
+
+        .pin-container h2 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.5rem;
+        }
+
+        .pin-display {
+            background: #f0f0f0;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 2rem;
+            letter-spacing: 10px;
+            min-height: 60px;
+        }
+
+        .pin-keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .pin-key {
+            padding: 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            background: #667eea;
+            color: white;
+            transition: background 0.2s ease;
+        }
+
+        .pin-key:hover {
+            background: #5568d3;
+        }
+
+        .pin-key.clear {
+            background: #e74c3c;
+        }
+
+        .pin-key.clear:hover {
+            background: #c0392b;
+        }
+
+        .pin-key.submit {
+            background: #27ae60;
+        }
+
+        .pin-key.submit:hover {
+            background: #219a52;
+        }
+
+        .pin-key.empty {
+            background: transparent;
+            cursor: default;
+        }
+
+        .pin-key.empty:hover {
+            background: transparent;
+        }
+
+        .pin-cancel {
+            margin-top: 15px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            background: #95a5a6;
+            color: white;
+            width: 100%;
+        }
+
+        .pin-cancel:hover {
+            background: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="lock-container">
+        <h1>🔒 Lock Screen</h1>
+        
+        <div class="form-group">
+            <label for="return-time">When will you be back?</label>
+            <input type="datetime-local" id="return-time">
+        </div>
+
+        <div class="form-group">
+            <label>Where are you going?</label>
+            <div class="reasons-grid">
+                <div class="reason-option" data-reason="Shopping">Shopping</div>
+                <div class="reason-option" data-reason="On a bus adventure">On a bus adventure</div>
+                <div class="reason-option" data-reason="At work">At work</div>
+                <div class="reason-option" data-reason="Gym">Gym</div>
+                <div class="reason-option" data-reason="Meeting friends">Meeting friends</div>
+                <div class="reason-option" data-reason="Other">Other</div>
+            </div>
+        </div>
+
+        <div class="lock-buttons">
+            <button class="lock-btn lock-btn-primary" onclick="lockWithoutPin()">Lock</button>
+            <button class="lock-btn lock-btn-secondary" onclick="showPinSetup()">Lock with PIN</button>
+        </div>
+
+        <button class="back-btn" onclick="window.location.href='/'">← Back to Dashboard</button>
+    </div>
+
+    <!-- PIN Setup Modal -->
+    <div class="pin-modal" id="pin-setup-modal">
+        <div class="pin-container">
+            <h2>Set PIN</h2>
+            <div class="pin-display" id="pin-setup-display"></div>
+            <div class="pin-keypad">
+                <button class="pin-key" onclick="addPinDigit('1')">1</button>
+                <button class="pin-key" onclick="addPinDigit('2')">2</button>
+                <button class="pin-key" onclick="addPinDigit('3')">3</button>
+                <button class="pin-key" onclick="addPinDigit('4')">4</button>
+                <button class="pin-key" onclick="addPinDigit('5')">5</button>
+                <button class="pin-key" onclick="addPinDigit('6')">6</button>
+                <button class="pin-key" onclick="addPinDigit('7')">7</button>
+                <button class="pin-key" onclick="addPinDigit('8')">8</button>
+                <button class="pin-key" onclick="addPinDigit('9')">9</button>
+                <button class="pin-key clear" onclick="clearPin()">Clear</button>
+                <button class="pin-key" onclick="addPinDigit('0')">0</button>
+                <button class="pin-key submit" onclick="submitPin()">✓</button>
+            </div>
+            <button class="pin-cancel" onclick="hidePinSetup()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        let selectedReason = null;
+        let pinValue = '';
+        let isSettingPin = true;
+
+        // Handle reason selection
+        document.querySelectorAll('.reason-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.reason-option').forEach(o => o.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedReason = this.dataset.reason;
+            });
+        });
+
+        // Lock without PIN
+        async function lockWithoutPin() {
+            const returnTime = document.getElementById('return-time').value;
+            
+            if (!returnTime) {
+                alert('Please select when you will be back');
+                return;
+            }
+            
+            if (!selectedReason) {
+                alert('Please select where you are going');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/lock', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        return_time: returnTime,
+                        reason: selectedReason,
+                        pin: null
+                    })
+                });
+
+                if (response.ok) {
+                    window.location.href = '/locked';
+                } else {
+                    alert('Failed to lock screen');
+                }
+            } catch (error) {
+                console.error('Error locking screen:', error);
+                alert('Failed to lock screen');
+            }
+        }
+
+        // Show PIN setup modal
+        function showPinSetup() {
+            const returnTime = document.getElementById('return-time').value;
+            
+            if (!returnTime) {
+                alert('Please select when you will be back');
+                return;
+            }
+            
+            if (!selectedReason) {
+                alert('Please select where you are going');
+                return;
+            }
+
+            isSettingPin = true;
+            pinValue = '';
+            updatePinDisplay();
+            document.getElementById('pin-setup-modal').classList.add('active');
+        }
+
+        // Hide PIN setup modal
+        function hidePinSetup() {
+            document.getElementById('pin-setup-modal').classList.remove('active');
+            pinValue = '';
+            updatePinDisplay();
+        }
+
+        // Add PIN digit
+        function addPinDigit(digit) {
+            if (pinValue.length < 4) {
+                pinValue += digit;
+                updatePinDisplay();
+            }
+        }
+
+        // Clear PIN
+        function clearPin() {
+            pinValue = '';
+            updatePinDisplay();
+        }
+
+        // Update PIN display
+        function updatePinDisplay() {
+            const display = document.getElementById('pin-setup-display');
+            display.textContent = pinValue.replace(/./g, '•');
+        }
+
+        // Submit PIN
+        async function submitPin() {
+            if (pinValue.length !== 4) {
+                alert('PIN must be 4 digits');
+                return;
+            }
+
+            const returnTime = document.getElementById('return-time').value;
+
+            try {
+                const response = await fetch('/api/lock', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        return_time: returnTime,
+                        reason: selectedReason,
+                        pin: pinValue
+                    })
+                });
+
+                if (response.ok) {
+                    window.location.href = '/locked';
+                } else {
+                    alert('Failed to lock screen');
+                }
+            } catch (error) {
+                console.error('Error locking screen:', error);
+                alert('Failed to lock screen');
+            }
+        }
+    </script>
+</body>
+</html>

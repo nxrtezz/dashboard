@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locked</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .locked-container {
+            text-align: center;
+            color: white;
+            padding: 40px;
+        }
+
+        .time-display {
+            font-size: 8rem;
+            font-weight: bold;
+            margin-bottom: 40px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .info-box {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .info-box h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        .info-box .reason {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        .info-box .return-time {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .tap-hint {
+            margin-top: 30px;
+            font-size: 0.9rem;
+            opacity: 0.7;
+        }
+
+        /* PIN Keypad Modal */
+        .pin-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            cursor: default;
+        }
+
+        .pin-modal.active {
+            display: flex;
+        }
+
+        .pin-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 350px;
+            width: 100%;
+        }
+
+        .pin-container h2 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 1.5rem;
+        }
+
+        .pin-display {
+            background: #f0f0f0;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 2rem;
+            letter-spacing: 10px;
+            min-height: 60px;
+        }
+
+        .pin-display.error {
+            border-color: #e74c3c;
+            background: #fee;
+        }
+
+        .pin-keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .pin-key {
+            padding: 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            background: #667eea;
+            color: white;
+            transition: background 0.2s ease;
+        }
+
+        .pin-key:hover {
+            background: #5568d3;
+        }
+
+        .pin-key.clear {
+            background: #e74c3c;
+        }
+
+        .pin-key.clear:hover {
+            background: #c0392b;
+        }
+
+        .pin-key.submit {
+            background: #27ae60;
+        }
+
+        .pin-key.submit:hover {
+            background: #219a52;
+        }
+
+        .pin-key.empty {
+            background: transparent;
+            cursor: default;
+        }
+
+        .pin-key.empty:hover {
+            background: transparent;
+        }
+
+        .pin-cancel {
+            margin-top: 15px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            background: #95a5a6;
+            color: white;
+            width: 100%;
+        }
+
+        .pin-cancel:hover {
+            background: #7f8c8d;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="locked-container">
+        <div class="time-display" id="time-display">
+            <div>Loading...</div>
+        </div>
+        
+        <div class="info-box">
+            <h2>🔒 Screen Locked</h2>
+            <div class="reason" id="reason-display">Loading...</div>
+            <div class="return-time" id="return-time-display">Loading...</div>
+            <div class="tap-hint" id="tap-hint">Tap anywhere to unlock</div>
+        </div>
+    </div>
+
+    <!-- PIN Unlock Modal -->
+    <div class="pin-modal" id="pin-unlock-modal">
+        <div class="pin-container">
+            <h2>Enter PIN</h2>
+            <div class="error-message" id="pin-error">Incorrect PIN. Try again.</div>
+            <div class="pin-display" id="pin-unlock-display"></div>
+            <div class="pin-keypad">
+                <button class="pin-key" onclick="addPinDigit('1')">1</button>
+                <button class="pin-key" onclick="addPinDigit('2')">2</button>
+                <button class="pin-key" onclick="addPinDigit('3')">3</button>
+                <button class="pin-key" onclick="addPinDigit('4')">4</button>
+                <button class="pin-key" onclick="addPinDigit('5')">5</button>
+                <button class="pin-key" onclick="addPinDigit('6')">6</button>
+                <button class="pin-key" onclick="addPinDigit('7')">7</button>
+                <button class="pin-key" onclick="addPinDigit('8')">8</button>
+                <button class="pin-key" onclick="addPinDigit('9')">9</button>
+                <button class="pin-key clear" onclick="clearPin()">Clear</button>
+                <button class="pin-key" onclick="addPinDigit('0')">0</button>
+                <button class="pin-key submit" onclick="submitPin()">✓</button>
+            </div>
+            <button class="pin-cancel" onclick="hidePinUnlock()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        let pinValue = '';
+        let lockData = null;
+
+        // Fetch lock data
+        async function fetchLockData() {
+            try {
+                const response = await fetch('/api/lock');
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching lock data:', error);
+                return null;
+            }
+        }
+
+        // Fetch time
+        async function fetchTime() {
+            try {
+                const response = await fetch('/api/time');
+                const data = await response.json();
+                return data.time;
+            } catch (error) {
+                console.error('Error fetching time:', error);
+                return null;
+            }
+        }
+
+        // Display time
+        function displayTime(time) {
+            const display = document.getElementById('time-display');
+            if (!time) {
+                display.innerHTML = '<div>Error loading time</div>';
+                return;
+            }
+            display.innerHTML = time;
+        }
+
+        // Display lock info
+        function displayLockInfo(data) {
+            lockData = data;
+            const reasonDisplay = document.getElementById('reason-display');
+            const returnTimeDisplay = document.getElementById('return-time-display');
+            const tapHint = document.getElementById('tap-hint');
+
+            if (!data || !data.locked) {
+                // Not locked, redirect to home
+                window.location.href = '/';
+                return;
+            }
+
+            reasonDisplay.textContent = data.reason || 'No reason specified';
+            
+            // Format return time
+            if (data.return_time) {
+                const returnDate = new Date(data.return_time);
+                const options = { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                };
+                returnTimeDisplay.textContent = `Back: ${returnDate.toLocaleDateString('en-GB', options)}`;
+            } else {
+                returnTimeDisplay.textContent = 'No return time specified';
+            }
+
+            // Update tap hint based on PIN
+            if (data.pin) {
+                tapHint.textContent = 'Tap anywhere to enter PIN';
+            } else {
+                tapHint.textContent = 'Tap anywhere to unlock';
+            }
+        }
+
+        // Update all data
+        async function updateAll() {
+            const time = await fetchTime();
+            displayTime(time);
+
+            const lockData = await fetchLockData();
+            displayLockInfo(lockData);
+        }
+
+        // Initial load
+        updateAll();
+
+        // Update time every second
+        setInterval(async () => {
+            const time = await fetchTime();
+            displayTime(time);
+        }, 1000);
+
+        // Handle tap to unlock
+        document.body.addEventListener('click', function(e) {
+            // Don't trigger if clicking inside PIN modal
+            if (e.target.closest('.pin-modal')) {
+                return;
+            }
+
+            if (lockData && lockData.pin) {
+                // Show PIN keypad
+                showPinUnlock();
+            } else {
+                // Unlock directly
+                unlockWithoutPin();
+            }
+        });
+
+        // Show PIN unlock modal
+        function showPinUnlock() {
+            pinValue = '';
+            updatePinDisplay();
+            document.getElementById('pin-error').classList.remove('visible');
+            document.getElementById('pin-unlock-display').classList.remove('error');
+            document.getElementById('pin-unlock-modal').classList.add('active');
+        }
+
+        // Hide PIN unlock modal
+        function hidePinUnlock() {
+            document.getElementById('pin-unlock-modal').classList.remove('active');
+            pinValue = '';
+            updatePinDisplay();
+        }
+
+        // Add PIN digit
+        function addPinDigit(digit) {
+            if (pinValue.length < 4) {
+                pinValue += digit;
+                updatePinDisplay();
+            }
+        }
+
+        // Clear PIN
+        function clearPin() {
+            pinValue = '';
+            updatePinDisplay();
+            document.getElementById('pin-error').classList.remove('visible');
+            document.getElementById('pin-unlock-display').classList.remove('error');
+        }
+
+        // Update PIN display
+        function updatePinDisplay() {
+            const display = document.getElementById('pin-unlock-display');
+            display.textContent = pinValue.replace(/./g, '•');
+        }
+
+        // Submit PIN for unlock
+        async function submitPin() {
+            if (pinValue.length !== 4) {
+                showPinError();
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/unlock', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        pin: pinValue
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    window.location.href = '/';
+                } else {
+                    showPinError();
+                }
+            } catch (error) {
+                console.error('Error unlocking:', error);
+                showPinError();
+            }
+        }
+
+        // Show PIN error
+        function showPinError() {
+            document.getElementById('pin-error').classList.add('visible');
+            document.getElementById('pin-unlock-display').classList.add('error');
+            pinValue = '';
+            updatePinDisplay();
+        }
+
+        // Unlock without PIN
+        async function unlockWithoutPin() {
+            try {
+                const response = await fetch('/api/unlock', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        pin: null
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    window.location.href = '/';
+                }
+            } catch (error) {
+                console.error('Error unlocking:', error);
+            }
+        }
+    </script>
+</body>
+</html>

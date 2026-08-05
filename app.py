@@ -4,8 +4,12 @@ import datetime
 import pytz
 import time
 import threading
+import os
+from dotenv import load_dotenv
 
-app = Flask(__name__)
+load_dotenv()
+
+app = Flask(__name__, static_folder='static')
 
 # Global state for uptime monitoring
 uptime_state = {
@@ -48,56 +52,83 @@ timer_state = {
     'end_time': None
 }
 
+# Lock state
+lock_state = {
+    'locked': False,
+    'return_time': None,
+    'reason': None,
+    'pin': None
+}
+
+# Weather cache
+weather_cache = {
+    'data': None,
+    'last_fetch': None
+}
+
 def get_weather():
+    global weather_cache
+    
+    # Check if we have cached data that's less than 5 minutes old
+    if weather_cache['data'] and weather_cache['last_fetch']:
+        cache_age = datetime.datetime.now() - weather_cache['last_fetch']
+        if cache_age < datetime.timedelta(minutes=5):
+            return weather_cache['data']
+    
     try:
-        # Using wttr.in for Titchfield, England (no API key required)
-        response = requests.get('https://wttr.in/Titchfield?format=j1', timeout=10)
+        api_key = os.getenv('WEATHERBIT_API_KEY')
+        lat = os.getenv('LAT')
+        lon = os.getenv('LON')
+        
+        response = requests.get(
+            f'https://api.weatherbit.io/v2.0/current?key={api_key}&include=minutely&lat={lat}&lon={lon}',
+            timeout=10
+        )
         data = response.json()
         
-        current = data['current_condition'][0]
-        temp_c = int(current['temp_C'])
-        condition = current['weatherDesc'][0]['value']
+        current = data['data'][0]
+        app_temp = current['app_temp']
+        sunrise = current['sunrise']
+        sunset = current['sunset']
+        weather = current['weather']
+        icon_code = weather['icon']
+        description = weather['description']
         
-        # Get astronomy data (sunrise/sunset)
-        astronomy = data.get('weather', [{}])[0].get('astronomy', [{}])[0]
-        sunrise = astronomy.get('sunrise', 'N/A')
-        sunset = astronomy.get('sunset', 'N/A')
-        
-        # Map weather conditions to icons
-        condition_lower = condition.lower()
-        if 'sunny' in condition_lower or 'clear' in condition_lower:
-            icon = '☀️'
-        elif 'cloud' in condition_lower or 'overcast' in condition_lower:
-            icon = '☁️'
-        elif 'rain' in condition_lower or 'drizzle' in condition_lower or 'shower' in condition_lower:
-            icon = '🌧️'
-        elif 'snow' in condition_lower:
-            icon = '❄️'
-        elif 'thunder' in condition_lower:
-            icon = '⛈️'
-        elif 'fog' in condition_lower or 'mist' in condition_lower:
-            icon = '🌫️'
-        elif 'partly' in condition_lower:
-            icon = '⛅'
-        else:
-            icon = '🌤️'
-        
-        return {
-            'temperature': temp_c,
-            'condition': condition,
-            'icon': icon,
+        weather_data = {
+            'app_temp': app_temp,
             'sunrise': sunrise,
-            'sunset': sunset
+            'sunset': sunset,
+            'icon': icon_code,
+            'description': description,
+            'wind_spd': current['wind_spd'],
+            'wind_dir': current['wind_cdir_full'],
+            'precip': current['precip'],
+            'humidity': current['rh'],
+            'uv': current['uv']
         }
+        
+        # Update cache
+        weather_cache['data'] = weather_data
+        weather_cache['last_fetch'] = datetime.datetime.now()
+        
+        return weather_data
     except Exception as e:
         print(f"Error fetching weather: {e}")
-        # Fallback to hardcoded values if API fails
+        # Return cached data if available, otherwise fallback
+        if weather_cache['data']:
+            return weather_cache['data']
+        # Fallback to hardcoded values if API fails and no cache
         return {
-            'temperature': 18,
-            'condition': 'Partly Cloudy',
-            'icon': '⛅',
-            'sunrise': '06:00 AM',
-            'sunset': '08:00 PM'
+            'app_temp': 18,
+            'sunrise': '06:00',
+            'sunset': '08:00',
+            'icon': 'c02d',
+            'description': 'Few clouds',
+            'wind_spd': 5.0,
+            'wind_dir': 'west',
+            'precip': 0,
+            'humidity': 65,
+            'uv': 3
         }
 
 def get_time():
@@ -462,6 +493,52 @@ def api_timers_delete():
 @app.route('/timer')
 def timer_page():
     return render_template('timer.html')
+
+@app.route('/lock')
+def lock_page():
+    return render_template('lock.html')
+
+@app.route('/locked')
+def locked_page():
+    return render_template('locked.html')
+
+@app.route('/api/lock', methods=['POST'])
+def api_lock():
+    global lock_state
+    data = request.json
+    lock_state['locked'] = True
+    lock_state['return_time'] = data.get('return_time')
+    lock_state['reason'] = data.get('reason')
+    lock_state['pin'] = data.get('pin')
+    return jsonify(lock_state)
+
+@app.route('/api/lock', methods=['GET'])
+def api_lock_get():
+    return jsonify(lock_state)
+
+@app.route('/api/unlock', methods=['POST'])
+def api_unlock():
+    global lock_state
+    data = request.json
+    pin = data.get('pin')
+    
+    if lock_state['pin'] is None:
+        # No PIN set, allow unlock
+        lock_state['locked'] = False
+        lock_state['return_time'] = None
+        lock_state['reason'] = None
+        lock_state['pin'] = None
+        return jsonify({'success': True})
+    elif pin == lock_state['pin']:
+        # PIN matches
+        lock_state['locked'] = False
+        lock_state['return_time'] = None
+        lock_state['reason'] = None
+        lock_state['pin'] = None
+        return jsonify({'success': True})
+    else:
+        # PIN doesn't match
+        return jsonify({'success': False})
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

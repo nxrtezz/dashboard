@@ -78,13 +78,21 @@
         /* Weather Widget */
         .weather-display {
             display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .weather-main {
+            display: flex;
             align-items: center;
             justify-content: center;
             gap: 20px;
         }
 
         .weather-icon {
-            font-size: 4rem;
+            width: 80px;
+            height: 80px;
         }
 
         .weather-info {
@@ -110,9 +118,44 @@
             color: #aaa;
         }
 
+        .weather-uv {
+            font-size: 1rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .dark-mode .weather-uv {
+            color: #aaa;
+        }
+
+        .weather-rain {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .rain-percent {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .dark-mode .rain-percent {
+            color: #a78bfa;
+        }
+
+        .rain-mm {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .dark-mode .rain-mm {
+            color: #aaa;
+        }
+
         .sun-times {
             display: flex;
-            justify-content: space-around;
+            justify-content: center;
+            gap: 30px;
             margin-top: 15px;
             font-size: 0.9rem;
             color: #666;
@@ -125,7 +168,7 @@
         .sun-time {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
         }
 
         .sun-icon {
@@ -213,25 +256,6 @@
         .lock-button:hover {
             transform: translateY(-2px);
             background: rgba(255, 255, 255, 0.3);
-        }
-
-        .locked-mode .nav-buttons,
-        .locked-mode .dashboard,
-        .locked-mode .alarm-display,
-        .locked-mode .timer-display {
-            display: none;
-        }
-
-        .locked-mode .time-display {
-            font-size: 8rem;
-        }
-
-        .locked-mode .header {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
         }
 
         /* Bus Widget */
@@ -472,7 +496,7 @@
             <button class="nav-btn" onclick="window.location.href='/alarms'">⏰ Alarms</button>
             <button class="nav-btn" onclick="window.location.href='/timer'">⏱️ Timer</button>
         </div>
-        <button class="lock-button" onclick="toggleLock()">🔒 Lock</button>
+        <button class="lock-button" onclick="window.location.href='/lock'">🔒 Lock</button>
         
         <div class="header">
             <h1>Dashboard</h1>
@@ -625,19 +649,28 @@
                 return;
             }
             display.innerHTML = `
-                <div class="weather-icon">${data.icon}</div>
-                <div class="weather-info">
-                    <div class="temperature">${data.temperature}°C</div>
-                    <div class="condition">${data.condition}</div>
-                    <div class="sun-times">
-                        <div class="sun-time">
-                            <div class="sun-icon">🌅</div>
-                            <div>Sunrise: ${data.sunrise}</div>
-                        </div>
-                        <div class="sun-time">
-                            <div class="sun-icon">🌇</div>
-                            <div>Sunset: ${data.sunset}</div>
-                        </div>
+                <div class="weather-main">
+                    <div class="weather-icon">
+                        <img src="/static/icons/${data.icon}.png" alt="${data.description}" width="80" height="80">
+                    </div>
+                    <div class="weather-info">
+                        <div class="temperature">${data.app_temp}°C</div>
+                        <div class="condition">${data.description}</div>
+                        <div class="weather-uv">UV ${data.uv}</div>
+                    </div>
+                </div>
+                <div class="weather-rain">
+                    <div class="rain-percent">💧 ${data.precip > 0 ? 'Rain' : 'No rain'}</div>
+                    <div class="rain-mm">${data.precip} mm</div>
+                </div>
+                <div class="sun-times">
+                    <div class="sun-time">
+                        <div class="sun-icon">🌅</div>
+                        <div>Sunrise: ${data.sunrise}</div>
+                    </div>
+                    <div class="sun-time">
+                        <div class="sun-icon">🌇</div>
+                        <div>Sunset: ${data.sunset}</div>
                     </div>
                 </div>
             `;
@@ -880,25 +913,19 @@
                     const sunriseTime = new Date();
                     const sunsetTime = new Date();
                     
-                    // Parse sunrise time (format: "06:00 AM")
-                    const sunriseMatch = weatherData.sunrise.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                    // Parse sunrise time (format: "HH:MM")
+                    const sunriseMatch = weatherData.sunrise.match(/(\d+):(\d+)/);
                     if (sunriseMatch) {
-                        let hours = parseInt(sunriseMatch[1]);
+                        const hours = parseInt(sunriseMatch[1]);
                         const minutes = parseInt(sunriseMatch[2]);
-                        const ampm = sunriseMatch[3].toUpperCase();
-                        if (ampm === 'PM' && hours !== 12) hours += 12;
-                        if (ampm === 'AM' && hours === 12) hours = 0;
                         sunriseTime.setHours(hours, minutes, 0, 0);
                     }
                     
-                    // Parse sunset time (format: "08:00 PM")
-                    const sunsetMatch = weatherData.sunset.match(/(\d+):(\d+)\s*(AM|PM)/i);
+                    // Parse sunset time (format: "HH:MM")
+                    const sunsetMatch = weatherData.sunset.match(/(\d+):(\d+)/);
                     if (sunsetMatch) {
-                        let hours = parseInt(sunsetMatch[1]);
+                        const hours = parseInt(sunsetMatch[1]);
                         const minutes = parseInt(sunsetMatch[2]);
-                        const ampm = sunsetMatch[3].toUpperCase();
-                        if (ampm === 'PM' && hours !== 12) hours += 12;
-                        if (ampm === 'AM' && hours === 12) hours = 0;
                         sunsetTime.setHours(hours, minutes, 0, 0);
                     }
                     
@@ -995,20 +1022,6 @@
 
         // Update other data every 30 seconds
         setInterval(updateAll, 30000);
-
-        // Lock functionality
-        function toggleLock() {
-            document.body.classList.add('locked-mode');
-            document.querySelector('.lock-button').style.display = 'none';
-        }
-
-        // Unlock on click (but not on lock button itself)
-        document.addEventListener('click', function(e) {
-            if (document.body.classList.contains('locked-mode') && !e.target.classList.contains('lock-button')) {
-                document.body.classList.remove('locked-mode');
-                document.querySelector('.lock-button').style.display = 'block';
-            }
-        });
     </script>
 </body>
 </html>
