@@ -79,28 +79,35 @@
         .weather-display {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            gap: 15px;
+            height: 100%;
+            gap: 0;
         }
 
-        .weather-main {
+        .weather-row {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 20px;
+            gap: 12px;
+            flex: 1;
+            padding: 8px 0;
         }
 
         .weather-icon {
-            width: 80px;
-            height: 80px;
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+            font-size: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .weather-info {
-            text-align: center;
+            flex: 1;
         }
 
         .temperature {
-            font-size: 3rem;
+            font-size: 1.2rem;
             font-weight: bold;
             color: #333;
         }
@@ -110,7 +117,7 @@
         }
 
         .condition {
-            font-size: 1.2rem;
+            font-size: 1rem;
             color: #666;
         }
 
@@ -121,16 +128,11 @@
         .weather-uv {
             font-size: 1rem;
             color: #666;
-            margin-top: 5px;
+            margin-left: 8px;
         }
 
         .dark-mode .weather-uv {
             color: #aaa;
-        }
-
-        .weather-rain {
-            text-align: center;
-            margin-top: 10px;
         }
 
         .rain-percent {
@@ -144,7 +146,7 @@
         }
 
         .rain-mm {
-            font-size: 0.9rem;
+            font-size: 1rem;
             color: #666;
         }
 
@@ -152,27 +154,13 @@
             color: #aaa;
         }
 
-        .sun-times {
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-            margin-top: 15px;
-            font-size: 0.9rem;
+        .sun-time {
+            font-size: 1.2rem;
             color: #666;
         }
 
-        .dark-mode .sun-times {
+        .dark-mode .sun-time {
             color: #aaa;
-        }
-
-        .sun-time {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .sun-icon {
-            font-size: 1.2rem;
         }
 
         /* Time Display */
@@ -307,6 +295,11 @@
 
         .bus-delay {
             color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .bus-on-time {
+            color: #27ae60;
             font-weight: bold;
         }
 
@@ -762,28 +755,31 @@
                 return;
             }
             display.innerHTML = `
-                <div class="weather-main">
+                <div class="weather-row">
                     <div class="weather-icon">
-                        <img src="/static/icons/${data.icon}.png" alt="${data.description}" width="80" height="80">
+                        <img src="/static/icons/${data.icon}.png" alt="${data.description}" width="40" height="40">
                     </div>
                     <div class="weather-info">
-                        <div class="temperature">${data.app_temp}°C</div>
-                        <div class="condition">${data.description}</div>
-                        <div class="weather-uv">UV ${data.uv}</div>
+                        <div class="temperature">${data.app_temp}°C <span class="condition">${data.description}</span> <span class="weather-uv">UV ${data.uv}</span></div>
                     </div>
                 </div>
-                <div class="weather-rain">
-                    <div class="rain-percent">💧 ${data.precip > 0 ? 'Rain' : 'No rain'}</div>
-                    <div class="rain-mm">${data.precip} mm</div>
-                </div>
-                <div class="sun-times">
-                    <div class="sun-time">
-                        <div class="sun-icon">🌅</div>
-                        <div>Sunrise: ${data.sunrise}</div>
+                <div class="weather-row">
+                    <div class="weather-icon">💧</div>
+                    <div class="weather-info">
+                        <div class="rain-percent">${data.precip > 0 ? 'Rain' : 'No rain'}</div>
+                        <div class="rain-mm">${data.precip} mm</div>
                     </div>
-                    <div class="sun-time">
-                        <div class="sun-icon">🌇</div>
-                        <div>Sunset: ${data.sunset}</div>
+                </div>
+                <div class="weather-row">
+                    <div class="weather-icon">🌅</div>
+                    <div class="weather-info">
+                        <div class="sun-time">Sunrise: ${data.sunrise}</div>
+                    </div>
+                </div>
+                <div class="weather-row">
+                    <div class="weather-icon">🌇</div>
+                    <div class="weather-info">
+                        <div class="sun-time">Sunset: ${data.sunset}</div>
                     </div>
                 </div>
             `;
@@ -884,7 +880,11 @@
                 if (bus.delay) {
                     const delayMinutes = parseDurationToMinutes(bus.delay);
                     if (delayMinutes !== null) {
-                        delayText = ` <span class="bus-delay">(${delayMinutes.toFixed(1)} min)</span>`;
+                        if (Math.abs(delayMinutes) < 0.5) {
+                            delayText = ` <span class="bus-on-time">On time</span>`;
+                        } else {
+                            delayText = ` <span class="bus-delay">(${delayMinutes.toFixed(1)} min)</span>`;
+                        }
                     }
                 }
                 const vehicleText = bus.vehicle && bus.journey_id ? 
@@ -895,10 +895,11 @@
                 const timeObj = new Date(bus.aimed_time);
                 const timeStr = timeObj.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
                 
+                const localityText = bus.locality ? ` - ${bus.locality}` : '';
+                
                 html += `
                     <div class="bus-item">
-                        <div class="bus-line">${bus.line}</div>
-                        <div class="bus-destination">${bus.destination}</div>
+                        <div class="bus-line">${bus.line}${localityText}</div>
                         <div class="bus-time">${timeStr}${delayText}</div>
                         ${vehicleText}
                     </div>

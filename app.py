@@ -158,6 +158,7 @@ def get_bus_data():
                     
                     bus_info = {
                         'line': bus['service']['line_name'],
+                        'locality': bus['destination'].get('locality', ''),
                         'destination': bus['destination']['name'],
                         'aimed_time': bus['aimed_departure_time'],
                         'delay': bus.get('delay'),
