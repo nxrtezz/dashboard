@@ -726,6 +726,17 @@
             }
         }
 
+        async function fetchLockState() {
+            try {
+                const response = await fetch('/api/lock');
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching lock state:', error);
+                return null;
+            }
+        }
+
         // Display functions
         function displayWeather(data) {
             const display = document.getElementById('weather-display');
@@ -1134,6 +1145,12 @@
 
         // Update all data
         async function updateAll() {
+            const lockState = await fetchLockState();
+            if (lockState && lockState.locked) {
+                window.location.href = '/locked';
+                return;
+            }
+
             const weather = await fetchWeather();
             weatherData = weather; // Store for sunrise/sunset calculation
             displayWeather(weather);
@@ -1186,6 +1203,14 @@
             const timer = await fetchTimer();
             if (timer && (timer.running || timer.paused)) {
                 displayTimer(timer);
+            }
+        }, 1000);
+
+        // Check lock state every second
+        setInterval(async () => {
+            const lockState = await fetchLockState();
+            if (lockState && lockState.locked) {
+                window.location.href = '/locked';
             }
         }, 1000);
 

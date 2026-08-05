@@ -478,12 +478,22 @@
 
         // Lock without PIN
         async function lockWithoutPin() {
-            const returnTime = document.getElementById('return-time').value;
+            let returnTime = document.getElementById('return-time').value;
             const customLocation = document.getElementById('custom-location').value.trim();
             
             if (!returnTime) {
                 showStatus('Please select when you will be back', 'error');
                 return;
+            }
+
+            // If only time is provided (no date), default to today
+            if (returnTime.includes('T')) {
+                const parts = returnTime.split('T');
+                if (parts.length === 2 && parts[0] === '') {
+                    // Only time provided, use today's date
+                    const today = new Date().toISOString().split('T')[0];
+                    returnTime = `${today}T${parts[1]}`;
+                }
             }
             
             if (!selectedReason) {
@@ -519,7 +529,7 @@
 
         // Lock with PIN
         async function lockWithPin() {
-            const returnTime = document.getElementById('return-time').value;
+            let returnTime = document.getElementById('return-time').value;
             const customLocation = document.getElementById('custom-location').value.trim();
             const pin = prompt('Enter a 4-digit PIN:');
             
@@ -535,6 +545,16 @@
             if (!returnTime) {
                 showStatus('Please select when you will be back', 'error');
                 return;
+            }
+
+            // If only time is provided (no date), default to today
+            if (returnTime.includes('T')) {
+                const parts = returnTime.split('T');
+                if (parts.length === 2 && parts[0] === '') {
+                    // Only time provided, use today's date
+                    const today = new Date().toISOString().split('T')[0];
+                    returnTime = `${today}T${parts[1]}`;
+                }
             }
             
             if (!selectedReason) {
