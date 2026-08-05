@@ -183,7 +183,7 @@ def get_bus_data():
             for bus in all_buses:
                 if 'trip_id' in bus and bus['trip_id'] in vehicle_map:
                     vehicle = vehicle_map[bus['trip_id']]
-                    bus['vehicle'] = f"{vehicle.get('name', '')}"
+                    bus['vehicle'] = f"{vehicle.get('vehicle', {}).get('name', '')}"
                     bus['journey_id'] = vehicle.get('journey_id')
         except Exception as e:
             print(f"Error fetching vehicles: {e}")
