@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remote Lock</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #333;
+            margin-bottom: 8px;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="datetime-local"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .reasons-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .reason-option {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .reason-option:hover {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .reason-option.selected {
+            border-color: #667eea;
+            background: rgba(102, 126, 234, 0.2);
+            font-weight: bold;
+        }
+
+        .location-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .location-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .location-item .location-name {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .location-item .location-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: background 0.2s ease;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary {
+            background: #764ba2;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5e3a7a;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #219a52;
+        }
+
+        .add-location-form {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .add-location-form input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        .add-location-form input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .lock-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .lock-btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .lock-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .lock-btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .lock-btn-secondary {
+            background: #764ba2;
+            color: white;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-message.visible {
+            display: block;
+        }
+
+        .current-status {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .current-status h3 {
+            margin-bottom: 10px;
+        }
+
+        .current-status p {
+            margin: 5px 0;
+            opacity: 0.9;
+        }
+
+        .back-btn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+            backdrop-filter: blur(10px);
+            transition: background 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Remote Lock Control</h1>
+        </div>
+
+        <div class="current-status" id="current-status">
+            <h3>Current Status</h3>
+            <p id="status-locked">Loading...</p>
+            <p id="status-reason"></p>
+            <p id="status-time"></p>
+            <p id="status-location"></p>
+        </div>
+
+        <div class="status-message" id="status-message"></div>
+
+        <div class="card">
+            <h2>📍 Manage Locations</h2>
+            <div class="location-list" id="location-list">
+                <div class="loading">Loading locations...</div>
+            </div>
+            <div class="add-location-form">
+                <input type="text" id="new-location" placeholder="Enter new location name">
+                <button class="btn btn-success" onclick="addLocation()">Add Location</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🔒 Lock Screen</h2>
+            
+            <div class="form-group">
+                <label for="return-time">When will you be back?</label>
+                <input type="datetime-local" id="return-time">
+            </div>
+
+            <div class="form-group">
+                <label>Where are you going?</label>
+                <div class="reasons-grid">
+                    <div class="reason-option" data-reason="Shopping">Shopping</div>
+                    <div class="reason-option" data-reason="On a bus adventure">On a bus adventure</div>
+                    <div class="reason-option" data-reason="At work">At work</div>
+                    <div class="reason-option" data-reason="Gym">Gym</div>
+                    <div class="reason-option" data-reason="Meeting friends">Meeting friends</div>
+                    <div class="reason-option" data-reason="Other">Other</div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="location-select">Location (optional)</label>
+                <select id="location-select" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem;">
+                    <option value="">-- Select a location --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="custom-location">Or enter custom location:</label>
+                <input type="text" id="custom-location" placeholder="Enter custom location">
+            </div>
+
+            <div class="lock-buttons">
+                <button class="lock-btn lock-btn-primary" onclick="lockWithoutPin()">Lock</button>
+                <button class="lock-btn lock-btn-secondary" onclick="lockWithPin()">Lock with PIN</button>
+            </div>
+        </div>
+
+        <div class="card" id="unlock-card" style="display: none;">
+            <h2>🔓 Unlock Screen</h2>
+            <div class="form-group">
+                <label for="unlock-pin">Enter PIN (if set):</label>
+                <input type="text" id="unlock-pin" placeholder="Enter 4-digit PIN" maxlength="4">
+            </div>
+            <button class="btn btn-primary" onclick="unlockScreen()">Unlock</button>
+        </div>
+
+        <button class="back-btn" onclick="window.location.href='/'">← Back to Dashboard</button>
+    </div>
+
+    <script>
+        let selectedReason = null;
+        let locations = [];
+
+        // Load locations from localStorage
+        function loadLocations() {
+            const stored = localStorage.getItem('dashboard_locations');
+            if (stored) {
+                locations = JSON.parse(stored);
+            } else {
+                locations = ['Home', 'Office', 'Gym', 'Supermarket'];
+                saveLocations();
+            }
+            renderLocations();
+            updateLocationSelect();
+        }
+
+        // Save locations to localStorage
+        function saveLocations() {
+            localStorage.setItem('dashboard_locations', JSON.stringify(locations));
+        }
+
+        // Render locations list
+        function renderLocations() {
+            const list = document.getElementById('location-list');
+            if (locations.length === 0) {
+                list.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No locations added yet</div>';
+                return;
+            }
+
+            let html = '';
+            for (const location of locations) {
+                html += `
+                    <div class="location-item">
+                        <span class="location-name">${location}</span>
+                        <div class="location-actions">
+                            <button class="btn btn-danger" onclick="deleteLocation('${location}')">Delete</button>
+                        </div>
+                    </div>
+                `;
+            }
+            list.innerHTML = html;
+        }
+
+        // Update location select dropdown
+        function updateLocationSelect() {
+            const select = document.getElementById('location-select');
+            select.innerHTML = '<option value="">-- Select a location --</option>';
+            for (const location of locations) {
+                select.innerHTML += `<option value="${location}">${location}</option>`;
+            }
+        }
+
+        // Add new location
+        function addLocation() {
+            const input = document.getElementById('new-location');
+            const location = input.value.trim();
+            
+            if (!location) {
+                showStatus('Please enter a location name', 'error');
+                return;
+            }
+
+            if (locations.includes(location)) {
+                showStatus('Location already exists', 'error');
+                return;
+            }
+
+            locations.push(location);
+            saveLocations();
+            renderLocations();
+            updateLocationSelect();
+            input.value = '';
+            showStatus('Location added successfully', 'success');
+        }
+
+        // Delete location
+        function deleteLocation(location) {
+            if (confirm(`Are you sure you want to delete "${location}"?`)) {
+                locations = locations.filter(l => l !== location);
+                saveLocations();
+                renderLocations();
+                updateLocationSelect();
+                showStatus('Location deleted', 'success');
+            }
+        }
+
+        // Handle reason selection
+        document.querySelectorAll('.reason-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.reason-option').forEach(o => o.classList.remove('selected'));
+                this.classList.add('selected');
+                selectedReason = this.dataset.reason;
+            });
+        });
+
+        // Handle location select change
+        document.getElementById('location-select').addEventListener('change', function() {
+            document.getElementById('custom-location').value = this.value;
+        });
+
+        // Show status message
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('status-message');
+            statusEl.textContent = message;
+            statusEl.className = `status-message ${type} visible`;
+            
+            setTimeout(() => {
+                statusEl.classList.remove('visible');
+            }, 3000);
+        }
+
+        // Lock without PIN
+        async function lockWithoutPin() {
+            const returnTime = document.getElementById('return-time').value;
+            const customLocation = document.getElementById('custom-location').value.trim();
+            
+            if (!returnTime) {
+                showStatus('Please select when you will be back', 'error');
+                return;
+            }
+            
+            if (!selectedReason) {
+                showStatus('Please select where you are going', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/lock', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        return_time: returnTime,
+                        reason: selectedReason,
+                        pin: null,
+                        location: customLocation || null
+                    })
+                });
+
+                if (response.ok) {
+                    showStatus('Screen locked successfully', 'success');
+                    updateStatus();
+                } else {
+                    showStatus('Failed to lock screen', 'error');
+                }
+            } catch (error) {
+                console.error('Error locking screen:', error);
+                showStatus('Failed to lock screen', 'error');
+            }
+        }
+
+        // Lock with PIN
+        async function lockWithPin() {
+            const returnTime = document.getElementById('return-time').value;
+            const customLocation = document.getElementById('custom-location').value.trim();
+            const pin = prompt('Enter a 4-digit PIN:');
+            
+            if (!pin) {
+                return;
+            }
+
+            if (pin.length !== 4 || !/^\d+$/.test(pin)) {
+                showStatus('PIN must be 4 digits', 'error');
+                return;
+            }
+            
+            if (!returnTime) {
+                showStatus('Please select when you will be back', 'error');
+                return;
+            }
+            
+            if (!selectedReason) {
+                showStatus('Please select where you are going', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/lock', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        return_time: returnTime,
+                        reason: selectedReason,
+                        pin: pin,
+                        location: customLocation || null
+                    })
+                });
+
+                if (response.ok) {
+                    showStatus('Screen locked with PIN successfully', 'success');
+                    updateStatus();
+                } else {
+                    showStatus('Failed to lock screen', 'error');
+                }
+            } catch (error) {
+                console.error('Error locking screen:', error);
+                showStatus('Failed to lock screen', 'error');
+            }
+        }
+
+        // Unlock screen
+        async function unlockScreen() {
+            const pin = document.getElementById('unlock-pin').value.trim();
+
+            try {
+                const response = await fetch('/api/unlock', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        pin: pin || null
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showStatus('Screen unlocked successfully', 'success');
+                    document.getElementById('unlock-pin').value = '';
+                    updateStatus();
+                } else {
+                    showStatus('Incorrect PIN', 'error');
+                }
+            } catch (error) {
+                console.error('Error unlocking screen:', error);
+                showStatus('Failed to unlock screen', 'error');
+            }
+        }
+
+        // Update current status
+        async function updateStatus() {
+            try {
+                const response = await fetch('/api/lock');
+                const data = await response.json();
+                
+                const statusLocked = document.getElementById('status-locked');
+                const statusReason = document.getElementById('status-reason');
+                const statusTime = document.getElementById('status-time');
+                const statusLocation = document.getElementById('status-location');
+                const unlockCard = document.getElementById('unlock-card');
+
+                if (data.locked) {
+                    statusLocked.textContent = '🔒 Status: LOCKED';
+                    statusReason.textContent = `Reason: ${data.reason || 'Not specified'}`;
+                    
+                    if (data.return_time) {
+                        const returnDate = new Date(data.return_time);
+                        const options = { 
+                            weekday: 'long', 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        };
+                        statusTime.textContent = `Back: ${returnDate.toLocaleDateString('en-GB', options)}`;
+                    } else {
+                        statusTime.textContent = 'Back: Not specified';
+                    }
+
+                    if (data.location) {
+                        statusLocation.textContent = `📍 Location: ${data.location}`;
+                    } else {
+                        statusLocation.textContent = '';
+                    }
+
+                    unlockCard.style.display = 'block';
+                } else {
+                    statusLocked.textContent = '🔓 Status: UNLOCKED';
+                    statusReason.textContent = '';
+                    statusTime.textContent = '';
+                    statusLocation.textContent = '';
+                    unlockCard.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error fetching lock status:', error);
+            }
+        }
+
+        // Initialize
+        loadLocations();
+        updateStatus();
+
+        // Update status every 5 seconds
+        setInterval(updateStatus, 5000);
+    </script>
+</body>
+</html>

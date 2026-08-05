@@ -62,7 +62,8 @@ lock_state = {
     'locked': False,
     'return_time': None,
     'reason': None,
-    'pin': None
+    'pin': None,
+    'location': None
 }
 
 # Weather cache
@@ -610,6 +611,10 @@ def timer_page():
 def lock_page():
     return render_template('lock.html')
 
+@app.route('/remote')
+def remote_page():
+    return render_template('remote.html')
+
 @app.route('/locked')
 def locked_page():
     return render_template('locked.html')
@@ -622,6 +627,7 @@ def api_lock():
     lock_state['return_time'] = data.get('return_time')
     lock_state['reason'] = data.get('reason')
     lock_state['pin'] = data.get('pin')
+    lock_state['location'] = data.get('location')
     return jsonify(lock_state)
 
 @app.route('/api/lock', methods=['GET'])
@@ -640,6 +646,7 @@ def api_unlock():
         lock_state['return_time'] = None
         lock_state['reason'] = None
         lock_state['pin'] = None
+        lock_state['location'] = None
         return jsonify({'success': True})
     elif pin == lock_state['pin']:
         # PIN matches
@@ -647,6 +654,7 @@ def api_unlock():
         lock_state['return_time'] = None
         lock_state['reason'] = None
         lock_state['pin'] = None
+        lock_state['location'] = None
         return jsonify({'success': True})
     else:
         # PIN doesn't match

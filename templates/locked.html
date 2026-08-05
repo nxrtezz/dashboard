@@ -203,6 +203,7 @@
             <h2>🔒 Screen Locked</h2>
             <div class="reason" id="reason-display">Loading...</div>
             <div class="return-time" id="return-time-display">Loading...</div>
+            <div class="return-time" id="location-display" style="display: none;">Loading...</div>
             <div class="tap-hint" id="tap-hint">Tap anywhere to unlock</div>
         </div>
     </div>
@@ -274,6 +275,7 @@
             lockData = data;
             const reasonDisplay = document.getElementById('reason-display');
             const returnTimeDisplay = document.getElementById('return-time-display');
+            const locationDisplay = document.getElementById('location-display');
             const tapHint = document.getElementById('tap-hint');
 
             if (!data || !data.locked) {
@@ -298,6 +300,14 @@
                 returnTimeDisplay.textContent = `Back: ${returnDate.toLocaleDateString('en-GB', options)}`;
             } else {
                 returnTimeDisplay.textContent = 'No return time specified';
+            }
+
+            // Display location if available
+            if (data.location) {
+                locationDisplay.textContent = `📍 ${data.location}`;
+                locationDisplay.style.display = 'block';
+            } else {
+                locationDisplay.style.display = 'none';
             }
 
             // Update tap hint based on PIN

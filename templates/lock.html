@@ -520,6 +520,11 @@
             </div>
         </div>
 
+        <div class="form-group">
+            <label for="location">Location (optional)</label>
+            <input type="text" id="location" placeholder="Enter location (e.g., Tesco, City Centre)">
+        </div>
+
         <div class="lock-buttons">
             <button class="lock-btn lock-btn-primary" onclick="lockWithoutPin()">Lock</button>
             <button class="lock-btn lock-btn-secondary" onclick="showPinSetup()">Lock with PIN</button>
@@ -758,6 +763,7 @@
         // Lock without PIN
         async function lockWithoutPin() {
             const returnTime = document.getElementById('return-time').value;
+            const location = document.getElementById('location').value.trim();
             
             if (!returnTime) {
                 alert('Please select when you will be back');
@@ -778,7 +784,8 @@
                     body: JSON.stringify({
                         return_time: returnTime,
                         reason: selectedReason,
-                        pin: null
+                        pin: null,
+                        location: location || null
                     })
                 });
 
@@ -848,6 +855,7 @@
             }
 
             const returnTime = document.getElementById('return-time').value;
+            const location = document.getElementById('location').value.trim();
 
             try {
                 const response = await fetch('/api/lock', {
@@ -858,7 +866,8 @@
                     body: JSON.stringify({
                         return_time: returnTime,
                         reason: selectedReason,
-                        pin: pinValue
+                        pin: pinValue,
+                        location: location || null
                     })
                 });
 
