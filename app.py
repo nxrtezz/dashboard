@@ -236,6 +236,7 @@ def get_immich_info():
         
         # Get server info
         response = requests.get(f'{url}/api/server-info/ping', headers=headers, timeout=10)
+        
         if response.status_code == 200:
             data = response.json()
             if data.get('res') == 'pong':
