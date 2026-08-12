@@ -153,13 +153,39 @@ def get_jellyfin_info():
             'Accept': 'application/json'
         }
         
-        # Get system info
-        response = requests.get(f'{url}/System/Info', headers=headers, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
+        # Get items count (movies and shows)
+        items_response = requests.get(f'{url}/Items', headers=headers, params={
+            'recursive': True,
+            'includeItemTypes': 'Movie,Series'
+        }, timeout=10)
+        
+        if items_response.status_code == 200:
+            items_data = items_response.json()
+            total_items = items_data.get('TotalRecordCount', 0)
+            
+            # Get movies count
+            movies_response = requests.get(f'{url}/Items', headers=headers, params={
+                'recursive': True,
+                'includeItemTypes': 'Movie'
+            }, timeout=10)
+            movies_count = 0
+            if movies_response.status_code == 200:
+                movies_data = movies_response.json()
+                movies_count = movies_data.get('TotalRecordCount', 0)
+            
+            # Get series count
+            series_response = requests.get(f'{url}/Items', headers=headers, params={
+                'recursive': True,
+                'includeItemTypes': 'Series'
+            }, timeout=10)
+            series_count = 0
+            if series_response.status_code == 200:
+                series_data = series_response.json()
+                series_count = series_data.get('TotalRecordCount', 0)
+            
             return {
                 'name': 'Jellyfin',
-                'info': f"Version: {data.get('Version', 'Unknown')}"
+                'info': f"{movies_count} Movies, {series_count} Shows"
             }
         return None
     except Exception as e:
@@ -176,14 +202,16 @@ def get_jellyseerr_info():
             'Accept': 'application/json'
         }
         
-        # Get system status
-        response = requests.get(f'{url}/api/v1/status', headers=headers, timeout=10)
+        # Get requests count
+        response = requests.get(f'{url}/api/v1/request/count', headers=headers, timeout=10)
         if response.status_code == 200:
             data = response.json()
-            version = data.get('version', 'Unknown')
+            total = data.get('total', 0)
+            pending = data.get('pending', 0)
+            
             return {
                 'name': 'Jellyseerr',
-                'info': f"Version: {version}"
+                'info': f"{total} Requests ({pending} pending)"
             }
         return None
     except Exception as e:
@@ -210,15 +238,31 @@ def get_portainer_info():
                     'Accept': 'application/json'
                 }
                 
-                # Get status
-                status_response = requests.get(f'{url}/api/status', headers=headers, timeout=10)
-                if status_response.status_code == 200:
-                    data = status_response.json()
-                    version = data.get('version', 'Unknown')
-                    return {
-                        'name': 'Portainer',
-                        'info': f"Version: {version}"
-                    }
+                # Get endpoints to find the first one
+                endpoints_response = requests.get(f'{url}/api/endpoints', headers=headers, timeout=10)
+                if endpoints_response.status_code == 200:
+                    endpoints = endpoints_response.json()
+                    if endpoints and len(endpoints) > 0:
+                        endpoint_id = endpoints[0].get('Id')
+                        
+                        # Get containers
+                        containers_response = requests.get(f'{url}/api/endpoints/{endpoint_id}/docker/containers/json', headers=headers, timeout=10)
+                        containers_count = 0
+                        if containers_response.status_code == 200:
+                            containers = containers_response.json()
+                            containers_count = len(containers)
+                        
+                        # Get stacks
+                        stacks_response = requests.get(f'{url}/api/stacks', headers=headers, timeout=10)
+                        stacks_count = 0
+                        if stacks_response.status_code == 200:
+                            stacks = stacks_response.json()
+                            stacks_count = len(stacks)
+                        
+                        return {
+                            'name': 'Portainer',
+                            'info': f"{stacks_count} Stacks, {containers_count} Containers"
+                        }
         return None
     except Exception as e:
         print(f"Error fetching Portainer info: {e}")

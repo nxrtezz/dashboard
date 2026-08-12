@@ -852,7 +852,7 @@
             const display = document.getElementById('alarm-display');
             const timeDisplay = document.getElementById('alarm-time');
             
-            if (!alarmData) {
+            if (!alarmData || !alarmData.enabled || !alarmData.time) {
                 display.classList.add('hidden');
                 return;
             }
@@ -863,11 +863,7 @@
             
             if (hour >= 0 && hour < 12) { // Show from midnight to noon
                 display.classList.remove('hidden');
-                if (alarmData.enabled && alarmData.time) {
-                    timeDisplay.textContent = alarmData.time;
-                } else {
-                    timeDisplay.textContent = 'Not set';
-                }
+                timeDisplay.textContent = alarmData.time;
             } else {
                 display.classList.add('hidden');
             }
