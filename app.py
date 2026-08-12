@@ -72,6 +72,12 @@ weather_cache = {
     'last_fetch': None
 }
 
+# Services cache
+services_cache = {
+    'data': None,
+    'last_fetch': None
+}
+
 def get_weather():
     global weather_cache
     
@@ -136,6 +142,156 @@ def get_weather():
             'humidity': 65,
             'uv': 3
         }
+
+def get_jellyfin_info():
+    try:
+        api_key = os.getenv('JELLYFIN_API_KEY')
+        url = os.getenv('JELLYFIN_URL', 'https://jellyfin.eeveeit.uk')
+        
+        headers = {
+            'X-Emby-Token': api_key,
+            'Accept': 'application/json'
+        }
+        
+        # Get system info
+        response = requests.get(f'{url}/System/Info', headers=headers, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            return {
+                'name': 'Jellyfin',
+                'info': f"Version: {data.get('Version', 'Unknown')}"
+            }
+        return None
+    except Exception as e:
+        print(f"Error fetching Jellyfin info: {e}")
+        return None
+
+def get_jellyseerr_info():
+    try:
+        api_key = os.getenv('JELLYSEERR_API_KEY')
+        url = os.getenv('JELLYSEERR_URL', 'https://jellyseerr.eeveeit.uk')
+        
+        headers = {
+            'X-Api-Key': api_key,
+            'Accept': 'application/json'
+        }
+        
+        # Get system status
+        response = requests.get(f'{url}/api/v1/status', headers=headers, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            version = data.get('version', 'Unknown')
+            return {
+                'name': 'Jellyseerr',
+                'info': f"Version: {version}"
+            }
+        return None
+    except Exception as e:
+        print(f"Error fetching Jellyseerr info: {e}")
+        return None
+
+def get_portainer_info():
+    try:
+        url = os.getenv('PORTAINER_URL', 'http://portainer.eeveeit.uk')
+        username = os.getenv('PORTAINER_USERNAME', 'admin')
+        password = os.getenv('PORTAINER_PASSWORD')
+        
+        # First, authenticate to get JWT token
+        auth_response = requests.post(f'{url}/api/auth', json={
+            'username': username,
+            'password': password
+        }, timeout=10)
+        
+        if auth_response.status_code == 200:
+            token = auth_response.json().get('jwt')
+            if token:
+                headers = {
+                    'Authorization': f'Bearer {token}',
+                    'Accept': 'application/json'
+                }
+                
+                # Get status
+                status_response = requests.get(f'{url}/api/status', headers=headers, timeout=10)
+                if status_response.status_code == 200:
+                    data = status_response.json()
+                    version = data.get('version', 'Unknown')
+                    return {
+                        'name': 'Portainer',
+                        'info': f"Version: {version}"
+                    }
+        return None
+    except Exception as e:
+        print(f"Error fetching Portainer info: {e}")
+        return None
+
+def get_immich_info():
+    try:
+        api_key = os.getenv('IMMICH_API_KEY')
+        url = os.getenv('IMMICH_URL', 'http://immich.eeveeit.uk')
+        
+        headers = {
+            'x-api-key': api_key,
+            'Accept': 'application/json'
+        }
+        
+        # Get server info
+        response = requests.get(f'{url}/api/server-info/ping', headers=headers, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get('res') == 'pong':
+                # Try to get more detailed info
+                try:
+                    info_response = requests.get(f'{url}/api/server-info/config', headers=headers, timeout=10)
+                    if info_response.status_code == 200:
+                        config = info_response.json()
+                        version = config.get('version', 'Unknown')
+                        return {
+                            'name': 'Immich',
+                            'info': f"Version: {version}"
+                        }
+                except:
+                    return {
+                        'name': 'Immich',
+                        'info': 'Connected'
+                    }
+        return None
+    except Exception as e:
+        print(f"Error fetching Immich info: {e}")
+        return None
+
+def get_services():
+    global services_cache
+    
+    # Check if we have cached data that's less than 5 minutes old
+    if services_cache['data'] and services_cache['last_fetch']:
+        cache_age = datetime.datetime.now() - services_cache['last_fetch']
+        if cache_age < datetime.timedelta(minutes=5):
+            return services_cache['data']
+    
+    services = []
+    
+    # Fetch all service info
+    jellyfin_info = get_jellyfin_info()
+    if jellyfin_info:
+        services.append(jellyfin_info)
+    
+    jellyseerr_info = get_jellyseerr_info()
+    if jellyseerr_info:
+        services.append(jellyseerr_info)
+    
+    portainer_info = get_portainer_info()
+    if portainer_info:
+        services.append(portainer_info)
+    
+    immich_info = get_immich_info()
+    if immich_info:
+        services.append(immich_info)
+    
+    # Update cache
+    services_cache['data'] = services
+    services_cache['last_fetch'] = datetime.datetime.now()
+    
+    return services
 
 def get_time():
     london = pytz.timezone('Europe/London')
@@ -502,6 +658,10 @@ def index():
 @app.route('/api/weather')
 def api_weather():
     return jsonify(get_weather())
+
+@app.route('/api/services')
+def api_services():
+    return jsonify(get_services())
 
 @app.route('/api/time')
 def api_time():

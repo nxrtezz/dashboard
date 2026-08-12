@@ -144,12 +144,33 @@
 
         /* Time Display */
         .time-display {
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
             font-size: 5rem;
             font-weight: bold;
             color: white;
             margin: 20px 0;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .weather-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.5rem;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .weather-status-icon {
+            width: 50px;
+            height: 50px;
+        }
+
+        .weather-status-text {
+            font-size: 1.5rem;
         }
 
         .alarm-display {
@@ -535,8 +556,47 @@
         }
 
         /* Simplified dark mode */
-        body.simplified-dark-mode .widget:not(.weather-widget):not(.bus-widget):not(.uptime-widget) {
+        body.simplified-dark-mode .widget:not(.bus-widget):not(.uptime-widget):not(.services-widget) {
             display: none;
+        }
+
+        /* Services Widget */
+        .services-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .service-item {
+            background: rgba(102, 126, 234, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .dark-mode .service-item {
+            background: rgba(118, 75, 162, 0.2);
+            border-left-color: #764ba2;
+        }
+
+        .service-name {
+            font-weight: bold;
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        .dark-mode .service-name {
+            color: #a78bfa;
+        }
+
+        .service-info {
+            color: #333;
+            margin: 5px 0;
+            font-size: 0.9rem;
+        }
+
+        .dark-mode .service-info {
+            color: #ddd;
         }
     </style>
 </head>
@@ -551,7 +611,12 @@
         <div class="header">
             <h1>Dashboard</h1>
             <div class="time-display" id="time-display">
-                <div class="loading">Loading...</div>
+                <div class="weather-status" id="weather-status">
+                    <div class="loading">Loading...</div>
+                </div>
+                <div id="clock-time">
+                    <div class="loading">Loading...</div>
+                </div>
             </div>
             <div class="alarm-display hidden" id="alarm-display">
                 Alarm: <span id="alarm-time">Not set</span>
@@ -562,14 +627,6 @@
         </div>
 
         <div class="dashboard">
-            <!-- Weather Widget -->
-            <div class="widget weather-widget">
-                <h2>Weather</h2>
-                <div class="weather-display" id="weather-display">
-                    <div class="loading">Loading...</div>
-                </div>
-            </div>
-
             <!-- Bus Widget -->
             <div class="widget bus-widget">
                 <h2>Next Bus Departures</h2>
@@ -582,6 +639,14 @@
             <div class="widget uptime-widget">
                 <h2>Website Info</h2>
                 <div id="uptime-display">
+                    <div class="loading">Loading...</div>
+                </div>
+            </div>
+
+            <!-- Services Widget -->
+            <div class="widget services-widget">
+                <h2>Services</h2>
+                <div id="services-display">
                     <div class="loading">Loading...</div>
                 </div>
             </div>
@@ -737,90 +802,44 @@
             }
         }
 
+        async function fetchServices() {
+            try {
+                const response = await fetch('/api/services');
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error fetching services:', error);
+                return null;
+            }
+        }
+
         let isRedirecting = false;
 
         // Display functions
         function displayWeather(data) {
-            const display = document.getElementById('weather-display');
-            if (!data) {
-                display.innerHTML = '<div class="loading">Error loading weather</div>';
-                return;
-            }
-
-            // Calculate day and night durations
-            let dayDuration = '--';
-            let nightDuration = '--';
-            
-            try {
-                const sunriseMatch = data.sunrise.match(/(\d+):(\d+)/);
-                const sunsetMatch = data.sunset.match(/(\d+):(\d+)/);
-                
-                if (sunriseMatch && sunsetMatch) {
-                    const sunriseHours = parseInt(sunriseMatch[1]);
-                    const sunriseMins = parseInt(sunriseMatch[2]);
-                    const sunsetHours = parseInt(sunsetMatch[1]);
-                    const sunsetMins = parseInt(sunsetMatch[2]);
-                    
-                    const sunriseMinsTotal = sunriseHours * 60 + sunriseMins;
-                    const sunsetMinsTotal = sunsetHours * 60 + sunsetMins;
-                    
-                    // Day duration (sunrise to sunset)
-                    const dayMins = sunsetMinsTotal - sunriseMinsTotal;
-                    const dayHrs = Math.floor(dayMins / 60);
-                    const dayRemMins = dayMins % 60;
-                    dayDuration = `${dayHrs}h ${dayRemMins}m`;
-                    
-                    // Night duration (sunset to sunrise next day)
-                    const nightMins = (24 * 60) - dayMins;
-                    const nightHrs = Math.floor(nightMins / 60);
-                    const nightRemMins = nightMins % 60;
-                    nightDuration = `${nightHrs}h ${nightRemMins}m`;
-                }
-            } catch (e) {
-                console.error('Error calculating durations:', e);
-            }
-
-            display.innerHTML = `
-                <div class="weather-row">
-                    <div class="weather-icon">
-                        <img src="/static/icons/${data.icon}.png" alt="${data.description}" width="40" height="40">
-                    </div>
-                    <div class="weather-info">
-                        <div class="weather-main-text">${data.description}</div>
-                        <div class="weather-right">${data.app_temp}°C • UV ${data.uv}</div>
-                    </div>
-                </div>
-                <div class="weather-row">
-                    <div class="weather-icon">💧</div>
-                    <div class="weather-info">
-                        <div class="weather-main-text">${data.precip > 0 ? 'Rain' : 'No rain'}</div>
-                        <div class="weather-right">${data.precip} mm</div>
-                    </div>
-                </div>
-                <div class="weather-row">
-                    <div class="weather-icon">🌅</div>
-                    <div class="weather-info">
-                        <div class="weather-main-text">Sunrise: ${data.sunrise}</div>
-                        <div class="weather-right">Day: ${dayDuration}</div>
-                    </div>
-                </div>
-                <div class="weather-row">
-                    <div class="weather-icon">🌇</div>
-                    <div class="weather-info">
-                        <div class="weather-main-text">Sunset: ${data.sunset}</div>
-                        <div class="weather-right">Night: ${nightDuration}</div>
-                    </div>
-                </div>
-            `;
+            // Weather is now displayed next to clock via displayWeatherStatus
+            // This function is kept for sunrise/sunset calculation
         }
 
         function displayTime(time) {
-            const display = document.getElementById('time-display');
+            const display = document.getElementById('clock-time');
             if (!time) {
                 display.innerHTML = '<div class="loading">Error loading time</div>';
                 return;
             }
             display.innerHTML = time;
+        }
+
+        function displayWeatherStatus(data) {
+            const display = document.getElementById('weather-status');
+            if (!data) {
+                display.innerHTML = '<div class="loading">Error loading weather</div>';
+                return;
+            }
+            display.innerHTML = `
+                <img src="/static/icons/${data.icon}.png" alt="${data.description}" class="weather-status-icon">
+                <span class="weather-status-text">${data.description} ${Math.round(data.app_temp)}°</span>
+            `;
         }
 
         function displayAlarm(alarmData) {
@@ -975,6 +994,31 @@
                 osc2.start(audioContext.currentTime);
                 osc2.stop(audioContext.currentTime + 0.3);
             }, 400);
+        }
+
+        function displayServices(data) {
+            const display = document.getElementById('services-display');
+            if (!data) {
+                display.innerHTML = '<div class="loading">Error loading services</div>';
+                return;
+            }
+
+            if (data.length === 0) {
+                display.innerHTML = '<div class="no-departures">No services available</div>';
+                return;
+            }
+
+            let html = '<div class="services-list">';
+            for (const service of data) {
+                html += `
+                    <div class="service-item">
+                        <div class="service-name">${service.name}</div>
+                        <div class="service-info">${service.info}</div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+            display.innerHTML = html;
         }
 
         function displayUptime(data) {
@@ -1155,6 +1199,7 @@
 
             const weather = await fetchWeather();
             weatherData = weather; // Store for sunrise/sunset calculation
+            displayWeatherStatus(weather);
             displayWeather(weather);
 
             const time = await fetchTime();
@@ -1171,6 +1216,9 @@
 
             const timer = await fetchTimer();
             displayTimer(timer);
+
+            const services = await fetchServices();
+            displayServices(services);
 
             const alarmTriggered = await fetchAlarmTriggered();
             if (alarmTriggered && !lastAlarmTriggered) {
